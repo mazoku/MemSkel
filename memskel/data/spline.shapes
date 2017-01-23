@@ -1,0 +1,15 @@
+Groups=Group1,
+Colors=255,
+Supergroups=null,
+Supercolors=null,
+
+type=spline
+name=Group1 #1
+group=Group1
+color=255
+supergroup=null
+supercolor=null
+in slice=0
+117,115,122,146,173,208,245,266,272,254,220,179,127,
+167,141,99,57,59,61,83,100,156,181,206,212,195,
+

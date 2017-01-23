@@ -1,0 +1,71 @@
+
+\documentclass[a4paper,oneside,12pt]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amsthm, amssymb, latexsym}
+\boldmath  
+\usepackage[czech]{babel}
+\usepackage{color}
+\usepackage{cite}
+\usepackage{graphicx}
+\usepackage{subfig}
+\graphicspath{{figures/}}
+\usepackage{float}
+
+\usepackage{fancyhdr} % hlavicky
+\usepackage{array} % lepsi tabulky
+
+%cisla v krouzku
+\usepackage{tikz}
+\newcommand*\circled[1]{\tikz[baseline=(char.base)]{\node[shape=circle,draw,inner sep=2pt] (char) {#1};}}
+
+
+% vkladani url
+\usepackage{hyperref}
+
+\oddsidemargin 0cm  
+\evensidemargin 0cm
+%\textwidth 6.1 true in
+\textwidth 6.6 true in
+
+% definice zahlavi pomoci stylu FANCYHEA.STY 
+\def\uppercase{} 
+\headheight 15pt
+\def\appendixname{Příloha}
+
+\lhead[\fancyplain{\rm\thepage}{\rm\thepage}]%
+	{\fancyplain{\sffamily\leftmark}{\sffamily\leftmark}} 
+\rhead[\fancyplain{\sffamily\leftmark}{\sffamily\leftmark}]%
+	{\fancyplain{\rm\thepage}{\rm\thepage}} 
+\chead{}\lfoot{}\cfoot{}\rfoot{} \def\uppercase{} 
+% format stranky podle FANCYHEA.STY 
+\pagestyle{fancy} 
+
+%makra
+\newcommand{\redbox}[1]{\colorbox{red}{#1}}
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+
+\renewcommand{\thesection}{\arabic{section}}
+\renewcommand{\thesubsection}{\arabic{section}.\arabic{subsection}}
+
+% zbaveni se parchantu
+\clubpenalty 10000
+\widowpenalty 10000
+
+\hyphenation{eTrium}
+
+\begin{document}
+
+% titulni stranka
+% ======================================================
+\title{\HRule\\
+		\vskip 0.5cm
+		\textbf{MemSkel - uživatelský manuál}\\
+		\HRule}
+\author{Tomáš Ryba\\ tryba@kky.zcu.cz}
+\date{\vfill \today}
+\maketitle
+
+\include{inc_text}
+
+\end{document}

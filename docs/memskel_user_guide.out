@@ -1,0 +1,17 @@
+\BOOKMARK [1][-]{section.0.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.0.2}{Graphical User Interface}{}% 2
+\BOOKMARK [1][-]{section.0.3}{Use of the Application}{}% 3
+\BOOKMARK [2][-]{subsection.0.3.1}{Running and Closing}{section.0.3}% 4
+\BOOKMARK [2][-]{subsection.0.3.2}{Loading the Data}{section.0.3}% 5
+\BOOKMARK [2][-]{subsection.0.3.3}{Segmentation of Cell Membrane}{section.0.3}% 6
+\BOOKMARK [2][-]{subsection.0.3.4}{Eraser Tool}{section.0.3}% 7
+\BOOKMARK [2][-]{subsection.0.3.5}{Skeletonization}{section.0.3}% 8
+\BOOKMARK [2][-]{subsection.0.3.6}{Approximation}{section.0.3}% 9
+\BOOKMARK [2][-]{subsection.0.3.7}{Saving the results}{section.0.3}% 10
+\BOOKMARK [1][-]{section.0.4}{Miscellaneous}{}% 11
+\BOOKMARK [2][-]{subsection.0.4.1}{Status bar}{section.0.4}% 12
+\BOOKMARK [2][-]{subsection.0.4.2}{Log file}{section.0.4}% 13
+\BOOKMARK [1][-]{section.0.5}{Running the software from source}{}% 14
+\BOOKMARK [2][-]{subsection.0.5.1}{Required packages}{section.0.5}% 15
+\BOOKMARK [2][-]{subsection.0.5.2}{Order of installing packages}{section.0.5}% 16
+\BOOKMARK [2][-]{subsection.0.5.3}{Running the software}{section.0.5}% 17
