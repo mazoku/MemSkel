@@ -15,6 +15,7 @@ import cv2
 import numpy as np
 
 from sketcher import Sketcher
+from trackbar_param_test import TrackWin
 
 import os
 import sys
@@ -149,7 +150,9 @@ def analyze_data(im, roi, seeds, seeds_m):
     # segmentation_rw(img, seeds_o, seeds_b, seeds_m, roi)
     # segmentation_gc(img, seeds_o, seeds_b, seeds_m, roi)
     # segmentation_fcm(img, roi, n_clusters=3, show=True)
+
     misc(img, roi)
+    # tt = TrackWin(img, skifil.frangi, 1, 10, 'frangi')
 
     # plt.figure()
     # plt.subplot(231), plt.imshow(roi, 'gray')

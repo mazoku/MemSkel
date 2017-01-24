@@ -46,7 +46,7 @@ class MemSkel:
         self.scale = None
 
         self.seeds = None
-        self.newbies = None #nove pridane pixely
+        self.newbies = None  # nove pridane pixely
         self.numframes = None
         self.segmentingStack = False
         self.repairingStack = False

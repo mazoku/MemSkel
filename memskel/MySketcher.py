@@ -12,19 +12,21 @@ from scipy.ndimage.morphology import distance_transform_edt
 import memskel_tools as mt
 import warnings
 
+
 class MySketcher:
-    def __init__( self, fig, ax, imgStack, seeds, on_keypress, linewidth, eraserR, memskel):
+
+    def __init__(self, fig, ax, imgStack, seeds, on_keypress, linewidth, eraserR, memskel):
         self.imgStack = imgStack
         self.numFrames = self.imgStack.shape[0]
         self.memskel = memskel
 
         self.currFrameIdx = 0
-        self.img = self.imgStack[self.currFrameIdx,:,:]
+        self.img = self.imgStack[self.currFrameIdx, :, :]
         self.seeds = seeds
 
-        x = np.arange( 0, self.seeds[self.currFrameIdx,:,:].shape[1] )
-        y = np.arange( 0, self.seeds[self.currFrameIdx,:,:].shape[0] )
-        self.xgrid, self.ygrid = np.meshgrid( x, y )
+        x = np.arange(0, self.seeds[self.currFrameIdx, :, :].shape[1])
+        y = np.arange(0, self.seeds[self.currFrameIdx, :, :].shape[0])
+        self.xgrid, self.ygrid = np.meshgrid(x, y)
 
         self.fig = fig
         self.ax = ax
@@ -61,52 +63,48 @@ class MySketcher:
         self.keypressCID = None
         self.on_keypressM = on_keypress
 
-        self.mask = np.zeros_like( self.seeds, dtype=np.bool )
-
+        self.mask = np.zeros_like(self.seeds, dtype=np.bool)
 
     def run(self):
-        self.registerCallbacks( 'view' )
+        self.registerCallbacks('view')
         #plt.show()
 
-
-    def on_mousePress( self, event ):
+    def on_mousePress(self, event):
         if not self.isErasing and event.button == 1 and event.inaxes:
             self.isMarking = True
-            self.lineMarkers = np.zeros( self.seeds[self.currFrameIdx,:,:].shape, dtype=np.int32 )#np.zeros_like( self.seeds, dtype=np.int32 )
-            self.line = Line2D( [round(event.xdata)], [round(event.ydata)], linewidth=self.lineWidth, color='red' )
-            self.linesL.append( self.line )
-            self.ax.add_artist( self.line )
+            self.lineMarkers = np.zeros(self.seeds[self.currFrameIdx, :, :].shape, dtype=np.int32)#np.zeros_like( self.seeds, dtype=np.int32 )
+            self.line = Line2D([round(event.xdata)], [round(event.ydata)], linewidth=self.lineWidth, color='red')
+            self.linesL.append(self.line)
+            self.ax.add_artist(self.line)
             self.fig.canvas.draw()
         elif self.isErasing and event.button == 1 and event.inaxes:
-            self.eraser = Circle( (event.xdata, event.ydata), self.eraserR, color = 'b', fill = False, linewidth = 5 )
-            self.ax.add_artist( self.eraser )
+            self.eraser = Circle((event.xdata, event.ydata), self.eraserR, color = 'b', fill = False, linewidth = 5)
+            self.ax.add_artist(self.eraser)
             self.isErasing = True
 #            self.text.set_text( 'eraser radius = ' + str(self.eraserR) )
-            self.erase( event.xdata, event.ydata )
+            self.erase(event.xdata, event.ydata)
             self.fig.canvas.draw()
 
-
-    def on_mouseRelease( self, event ):
+    def on_mouseRelease(self, event):
         if not self.isErasing and event.button == 1:
             self.isMarking = False
-            self.lineMarkers = pm.dilate( self.lineMarkers.astype(np.bool) , np.ones( (self.lineWidth,self.lineWidth), dtype=np.bool ) )
-            self.seeds[self.currFrameIdx,:,:] |= np.copy( self.lineMarkers )
+            self.lineMarkers = pm.dilate(self.lineMarkers.astype(np.bool), np.ones( (self.lineWidth,self.lineWidth), dtype=np.bool ) )
+            self.seeds[self.currFrameIdx, :, :] |= np.copy(self.lineMarkers)
         elif self.isErasing and event.button == 1:
             if self.eraser:
                 self.eraser.remove()
-            self.eraser = Circle( (event.xdata, event.ydata), self.eraserR, color = 'b', fill = False, linewidth = 5 )
-            self.ax.add_artist( self.eraser )
+            self.eraser = Circle((event.xdata, event.ydata), self.eraserR, color = 'b', fill = False, linewidth = 5)
+            self.ax.add_artist(self.eraser)
             self.fig.canvas.draw()
 
-
-    def on_mouseMove( self, event):
+    def on_mouseMove(self, event):
         if event.inaxes and self.isMarking:
         #            pt = ( round(event.ydata), round(event.xdata) )
             if event.button == 1:
-                xd = np.hstack( (self.line.get_xdata(), event.xdata) )
-                yd = np.hstack( (self.line.get_ydata(), event.ydata) )
-                self.line.set_xdata( xd )
-                self.line.set_ydata( yd )
+                xd = np.hstack((self.line.get_xdata(), event.xdata))
+                yd = np.hstack((self.line.get_ydata(), event.ydata))
+                self.line.set_xdata(xd)
+                self.line.set_ydata(yd)
                 self.fig.canvas.draw()
                 self.lineMarkers[event.ydata, event.xdata] = 1
                 #                self.dests[1][event.ydata, event.xdata] = 1
@@ -115,24 +113,23 @@ class MySketcher:
                 self.prev_pt = None
         elif self.isMarking and not event.inaxes:
             self.isMarking = False
-            self.lineMarkers = pm.dilate( self.lineMarkers, np.ones( (self.lineWidth,self.lineWidth), dtype=np.int ) )
+            self.lineMarkers = pm.dilate(self.lineMarkers, np.ones((self.lineWidth,self.lineWidth), dtype=np.int))
             self.seeds[self.currFrameIdx,:,:] |= self.lineMarkers
         elif self.isErasing and event.button == 1: #left button is pressed -> erasing
-            self.eraser = Circle( (event.xdata, event.ydata), self.eraserR, color = 'r', fill = False, linewidth = 5 )
+            self.eraser = Circle((event.xdata, event.ydata), self.eraserR, color = 'r', fill = False, linewidth = 5)
             self.ax.add_artist( self.eraser )
             self.erase( event.xdata, event.ydata )
         elif self.isErasing and event.button != 1: #left button not pressed -> only positioning
             if self.eraser:
                 self.eraser.remove()
-            self.eraser = Circle( (event.xdata, event.ydata), self.eraserR, color = 'b', fill = False, linewidth = 5 )
-            self.ax.add_artist( self.eraser )
+            self.eraser = Circle((event.xdata, event.ydata), self.eraserR, color = 'b', fill = False, linewidth = 5)
+            self.ax.add_artist(self.eraser)
 
             self.fig.canvas.draw()
         else:
             self.isMarking = False
 
-
-    def calcEraserMask( self ):
+    def calcEraserMask(self):
     #        circsL = list()
     #        for r in range( self.maxR + 1 ):
     #            size = 2 * r + 1
@@ -143,73 +140,69 @@ class MySketcher:
     #                        circ[i,j] = 1
     #            circsL.append( np.copy(circ) )
     #        return circsL
-        circ = np.ones( (2*self.maxR+1,2*self.maxR+1), dtype=np.uint8  )
-        circ[self.maxR,self.maxR] = 0
-        circ = distance_transform_edt( circ )
+        circ = np.ones((2*self.maxR+1, 2*self.maxR+1), dtype=np.uint8)
+        circ[self.maxR, self.maxR] = 0
+        circ = distance_transform_edt(circ)
         #circ = cv2.distanceTransform( circ, cv.CV_DIST_L2, 3)
 
         return circ
 
-
-    def on_mouseScrollViewMode( self, event):
+    def on_mouseScrollViewMode(self, event):
         #self.currFrameIdx += int( event.step )
         if event.step > 0:
-            self.currFrameIdx = min( self.numFrames-1, self.currFrameIdx + event.step )
+            self.currFrameIdx = min(self.numFrames-1, self.currFrameIdx + event.step)
         else:
-            self.currFrameIdx = max( 0, self.currFrameIdx + event.step )
-        self.memskel.scale.set( self.currFrameIdx )
+            self.currFrameIdx = max(0, self.currFrameIdx + event.step)
+        self.memskel.scale.set(self.currFrameIdx)
 
         #self.img = self.imgStack[ self.currFrameIdx,:,: ]
         #self.redrawFig()
 
-
-    def on_mouseScrollMarkMode( self, event):
+    def on_mouseScrollMarkMode(self, event):
         if event.step > 0:
             if self.isErasing:
-                self.memskel.eraserRadiusSpinbox.invoke( 'buttonup' )
+                self.memskel.eraserRadiusSpinbox.invoke('buttonup')
                 self.on_mouseMove( event )
                 #self.redrawFig()
             else:
-                self.memskel.linewidthSpinbox.invoke( 'buttonup' )
+                self.memskel.linewidthSpinbox.invoke('buttonup')
         else:
             if self.isErasing:
-                self.memskel.eraserRadiusSpinbox.invoke( 'buttondown' )
-                self.on_mouseMove( event )
+                self.memskel.eraserRadiusSpinbox.invoke('buttondown')
+                self.on_mouseMove(event)
                 # self.redrawFig()
             else:
-                self.memskel.linewidthSpinbox.invoke( 'buttondown' )
+                self.memskel.linewidthSpinbox.invoke('buttondown')
 
-
-    def setImgFrame( self, idx):
+    def setImgFrame(self, idx):
         self.currFrameIdx = idx
-        self.img = self.imgStack[ self.currFrameIdx,:,: ]
+        self.img = self.imgStack[self.currFrameIdx, :, :]
         self.redrawFig()
 
-
-    def erase( self, x, y ):
-        circI = np.argwhere( self.eraserMask <= self.eraserR )
-        circI[:,0] += (y - self.maxR)
-        circI[:,1] += (x - self.maxR)
+    def erase(self, x, y):
+        circI = np.argwhere(self.eraserMask <= self.eraserR)
+        circI[:, 0] += (y - self.maxR)
+        circI[:, 1] += (x - self.maxR)
 
         #odstraneni bodu mimo obraz
-        circI = circI[circI[:,1] >= 0,:] #x coord
-        circI = circI[circI[:,1] < self.mask[self.currFrameIdx,:,:].shape[1],:] #x coord
-        circI = circI[circI[:,0] >= 0,:] #y coord
-        circI = circI[circI[:,0] < self.mask[self.currFrameIdx,:,:].shape[0],:] #y coord
+        circI = circI[circI[:, 1] >= 0, :] #x coord
+        circI = circI[circI[:, 1] < self.mask[self.currFrameIdx, :, :].shape[1], :] #x coord
+        circI = circI[circI[:, 0] >= 0, :] #y coord
+        circI = circI[circI[:, 0] < self.mask[self.currFrameIdx, :, :].shape[0], :] #y coord
 
-        if self.mask[ self.currFrameIdx,:,:].any():
-            self.mask[ self.currFrameIdx, circI[:,0], circI[:,1] ] = 0
-        self.seeds[ self.currFrameIdx, circI[:,0], circI[:,1] ] = 0
+        if self.mask[self.currFrameIdx, :, :].any():
+            self.mask[self.currFrameIdx, circI[:, 0], circI[:, 1]] = 0
+        self.seeds[self.currFrameIdx, circI[:, 0], circI[:, 1]] = 0
 
-        self.memskel.skel[self.currFrameIdx,:,:] = np.zeros_like( self.memskel.skel[self.currFrameIdx,:,:] )
+        self.memskel.skel[self.currFrameIdx, :, :] = np.zeros_like(self.memskel.skel[self.currFrameIdx, :, :])
         self.redrawFig()
 
 
-    def getMarkers( self ):
-        return self.seeds[self.currFrameIdx,:,:]
+    def getMarkers(self):
+        return self.seeds[self.currFrameIdx, :, :]
 
 
-    def setInitMask( self, mask, idx=-1, redraw=True, setSeeds=True, setMask=True ):
+    def setInitMask(self, mask, idx=-1, redraw=True, setSeeds=True, setMask=True):
         if idx == -1:
             idx = self.currFrameIdx
         if setSeeds:
