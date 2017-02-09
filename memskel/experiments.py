@@ -48,7 +48,7 @@ def norm_shape(shape):
     raise TypeError('shape must be an int, or a tuple of ints')
 
 
-def sliding_window(a,ws,ss = None,flatten = True):
+def sliding_window(a, ws, ss=None, flatten=True):
     '''
     Return a sliding window over a in any number of dimensions
 
@@ -174,6 +174,47 @@ if __name__ == '__main__':
     im = skiio.imread(fname)
     img = skicol.rgb2gray(im.swapaxes(0, 1).swapaxes(1, 2))
 
+    # percent thresh
+    hist, bins = skiexp.histogram(img)
+    hist = hist / hist.sum()
+    cum_hist = hist.copy()
+    for i in range(1, len(cum_hist)):
+        cum_hist[i] += cum_hist[i - 1]
+
+    perc_ts = [0.6, 0.7, 0.75, 0.8, 0.85, 0.9]
+    colors = 5 * 'rgbcmyk'
+    colors = colors[:len(perc_ts)]
+    thresholds = []
+    threshold_inds = []
+    im_percs = []
+    for p in perc_ts:
+        diff = cum_hist - p
+        diff *= diff > 0
+
+        t_ind = np.nonzero(diff)[0][0]
+        t = bins[t_ind]
+        threshold_inds.append(t_ind)
+        thresholds.append(t)
+
+        res = img > t
+        im_percs.append(res)
+
+    plt.figure()
+    plt.subplot(211), plt.plot(bins, hist, 'b-')
+    plt.subplot(212), plt.plot(bins, cum_hist, 'r-')
+    for t, t_ind, c in zip(thresholds, threshold_inds, colors):
+        plt.plot((t, t), (0, cum_hist[t_ind]), '%s-' % c)
+        plt.plot((0, t), (cum_hist[t_ind], cum_hist[t_ind]), '%s-' % c)
+        plt.plot(t, cum_hist[t_ind], '%so' % c)
+
+    plt.figure()
+    n_imgs = len(im_percs)
+    for i, (res, t, p_t) in enumerate(zip(im_percs, thresholds, perc_ts)):
+        plt.subplot(1, n_imgs, i + 1)
+        plt.imshow(res, 'gray', interpolation='nearest')
+        plt.title('p=%.2f, t=%.3f' % (p_t, t))
+    plt.show()
+
     # OTSU
     print 'Otsu ...',
     thresh_otsu = skifil.threshold_otsu(img)
@@ -224,7 +265,7 @@ if __name__ == '__main__':
     im_otsu = skimor.binary_opening(im_otsu, selem=skimor.disk(1))
     im_otsu = skimor.binary_closing(im_otsu, selem=skimor.disk(3))
 
-    block_size = 99
+    block_size = 100
     mil_adapt = skifil.threshold_adaptive(mil, block_size)
 
     mil_adapt = skimor.binary_opening(mil_adapt, selem=skimor.disk(3))
@@ -265,7 +306,6 @@ if __name__ == '__main__':
     areas = [(labels == x).sum() for x in np.unique(labels) if x > -1]
     af_max_lab = labels == np.argmax(areas)
 
-
     plt.figure()
     plt.subplot(221), plt.imshow(img, 'gray', interpolation='nearest'), plt.title('input')
     plt.subplot(222), plt.imshow(otsu_max_lab, 'gray', interpolation='nearest'), plt.title('otsu mask')
@@ -288,4 +328,5 @@ if __name__ == '__main__':
     # for c in cnts_af:
     #     plt.plot(c[:, 1], c[:, 0], 'y',linewidth=1)
     #     plt.axis('image')
+
     plt.show()

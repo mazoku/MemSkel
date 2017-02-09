@@ -311,7 +311,7 @@ def init_test_cv(img):
 
         circle_in = {'x': 0, 'y': 0, 'radius': 50, 'color': (0, 255, 0), 'width': 1, 'visible': False, 'active': False}
         circle_out = {'x':0, 'y':0, 'radius':80, 'color':(0, 0, 255), 'width':1, 'visible':False, 'active':False}
-        while (1):
+        while True:
             im_vis = img.copy()
             if circle_in['visible']:
                 cv2.circle(im_vis, (circle_in['x'], circle_in['y']), circle_in['radius'], circle_in['color'],
@@ -321,6 +321,7 @@ def init_test_cv(img):
                            circle_out['width'])
             cv2.imshow('image', im_vis)
             k = cv2.waitKey(50)
+            print k
 
             if k & 0xFF == 13:  # enter
                 print 'circle_in:', circle_in

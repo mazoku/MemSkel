@@ -2,7 +2,6 @@ __author__ = 'Ryba'
 
 import numpy as np
 import pymorph as pm
-# import skimage.morphology as skimor
 import matplotlib.pyplot as plt
 
 #----------------------------------------------------------------------------------------------------------------------
@@ -38,7 +37,7 @@ def sequentialThinning(skel, type = 'both'):
 
 #----------------------------------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------------------------------
-def fuseImages( imgs, colors, type = 'imgs', shape = [] ):
+def fuseImages(imgs, colors, type='imgs', shape=[]):
     """
     Function for fusing multiple binary images.
     Supported colors are:
@@ -53,34 +52,34 @@ def fuseImages( imgs, colors, type = 'imgs', shape = [] ):
         imgs ... images are given in matrix form
         coords ... images are given by non-zero pixels in tuple form
     """
-    colorsD = dict({ 'w' : [1,1,1,1],
-                     'r' : [1,0,0,1],
-                     'g' : [0,1,0,1],
-                     'b' : [0,0,1,1],
-                     'y' : [1,1,0,1],
-                     'm' : [1,0,1,1],
-                     'c' : [0,1,1,1],
-                     'x' : [0,0,0,0]})
+    colorsD = dict({'w' : [1,1,1,1],
+                    'r' : [1,0,0,1],
+                    'g' : [0,1,0,1],
+                    'b' : [0,0,1,1],
+                    'y' : [1,1,0,1],
+                    'm' : [1,0,1,1],
+                    'c' : [0,1,1,1],
+                    'x' : [0,0,0,0]})
 
     if shape:
-        finalIm = np.zeros( np.hstack( (shape, 4) ) )
-        finalIm[:,:,3] = 1
+        finalIm = np.zeros(np.hstack((shape, 4)))
+        finalIm[:, :, 3] = 1
     else:
-        finalIm = np.zeros( np.hstack( (imgs[0].shape, 4) ) )
+        finalIm = np.zeros(np.hstack((imgs[0].shape, 4)))
 
-    for i in range( len( imgs ) ):
-        im = imgs[ i ]
+    for i in range(len(imgs)):
+        im = imgs[i]
         if not im.any():
             continue
-        c = colors[ i ]
+        c = colors[i]
         if type == 'imgs':
-            imP = np.argwhere( im )
+            imP = np.argwhere(im)
         elif type == 'coords':
-            imP = im.astype( np.int )
+            imP = im.astype(np.int)
         if len(imP.shape) > 1:
-            finalIm[ imP[:,0], imP[:,1], : ] = colorsD[ c ]
+            finalIm[imP[:, 0], imP[:, 1], :] = colorsD[c]
         else:
-            finalIm[ imP[0], imP[1], : ] = colorsD[ c ]
+            finalIm[imP[0], imP[1], :] = colorsD[c]
 
     return finalIm
 

@@ -330,7 +330,7 @@ class LoReGro_App:
         ballM[:,:,0] += newbie[0]
         ballM[:,:,1] += newbie[1]
 
-        #    warnings.warn( 'Place for possible speeding up the process.' )
+        #    warnings.warn( 'Place for possible speeding up of the process.' )
         #    if np.amin( ballM[:,:,0] ) < 0:
         try:
             while np.amin( ballM[:,:,0] ) < 0:

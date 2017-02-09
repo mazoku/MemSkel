@@ -4,6 +4,9 @@ import cv2
 import skimage.filters as skifil
 import skimage.io as skiio
 import skimage.restoration as skires
+import skimage.exposure as skiexp
+
+import matplotlib.pyplot as plt
 
 
 def update(value):
@@ -33,23 +36,27 @@ def run(img, winname='frangi'):
 
     im_vis = img.copy()
 
-    # cv2.imshow('im', img)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    # plt.figure()
+    # plt.subplot(121)
+    # plt.imshow(img, 'gray')
+    # plt.subplot(122)
+    # plt.imshow(skifil.frangi(img), 'gray')
+    # plt.show()
+    cv2.imshow('input', img)
 
     while True:
         k = cv2.waitKey(50)
         if k & 0xFF == 27:  # esc
             break
 
-        range1 = cv2.getTrackbarPos('range1', winname)
-        range2 = cv2.getTrackbarPos('range2', winname)
-        scale_step = cv2.getTrackbarPos('scale_step', winname)
-        beta1 = cv2.getTrackbarPos('beta1', winname) / 10
-        beta2 = cv2.getTrackbarPos('beta2', winname) / 10
+        range1 = cv2.getTrackbarPos('range1', winname)  # 0
+        range2 = cv2.getTrackbarPos('range2', winname)  # 4
+        scale_step = cv2.getTrackbarPos('scale_step', winname)  # 2
+        beta1 = cv2.getTrackbarPos('beta1', winname) / 10  # 0.5
+        beta2 = cv2.getTrackbarPos('beta2', winname) / 10  # 15
 
-        im_vis = skifil.frangi(img)#, (range1, range2), scale_step, beta1, beta2)
-        cv2.imshow(winname, im_vis)
+        im_vis = skifil.frangi(img, (range1, range2), scale_step, beta1, beta2)
+        cv2.imshow(winname, skiexp.rescale_intensity(im_vis, out_range=(0, 1)))
 
     cv2.destroyAllWindows()
 

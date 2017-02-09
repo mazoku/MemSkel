@@ -78,7 +78,7 @@ setup(
     author_email='tryba@kky.zcu.cz',
 
     windows=[{
-            'script': 'memSkel_main.py',
+            'script': 'memskel_main.py',
             'icon_resources': [(1, 'data/icons/multiIcon.ico')]
              }],
     #data_files = matplotlib.get_py2exe_datafiles(),
