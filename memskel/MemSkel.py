@@ -61,7 +61,7 @@ class MemSkel:
         self.scale = None
 
         self.seeds = None
-        self.newbies = None #nove pridane pixely
+        self.newbies = None  # nove pridane pixely
         self.numframes = None
         self.segmentingStack = False
         self.repairingStack = False
@@ -204,7 +204,7 @@ class MemSkel:
         approxFrame.grid(row=curr_r, column=0, pady=10, sticky=tk.W + tk.E)
         curr_r += 1
 
-        #ERASER FRAME --------------------------------------------------------
+        # ERASER FRAME --------------------------------------------------------
         eraserFrame = tk.LabelFrame(self.toolbar, text='Eraser', relief=tk.GROOVE)
 
         img5 = Image.open('data/icons/eraser.png')
