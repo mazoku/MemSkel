@@ -48,10 +48,11 @@ import skimage.io as skiio
 import cv2
 
 from imagedata import ImageData
+from MyImageViewer import ImageViewerQt
 
 # ----
-OBJ_COLOR = QtCore.Qt.red
-BGD_COLOR = QtCore.Qt.blue
+OBJ_COLOR = [255, 0, 0]  # QtCore.Qt.red
+BGD_COLOR = [0, 0, 255]  # QtCore.Qt.blue
 
 
 class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
@@ -60,13 +61,14 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         super(MainWindow, self).__init__(parent)
         self.setupUi(self)
 
-        self.canvas_size = (600, 600)
+        # self.canvas_size = (600, 600)
         # self.slice_slider_F.hide()
 
         self.actual_idx = 0  # index of actual (displayed) slice/frame of data
         self.data_fname = None
         self.data = ImageData()
         self.marking = False  # flag whether the user is marking seed points
+        # self.x
 
         # OVERRIDING ----
         # self.canvas_L.resized.connect(self.resize_canvas_event)
@@ -80,24 +82,66 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
 
         # display default image
         logo_fname = 'data/icons/kky.png'
-        self.img_vis = QtGui.QPixmap(logo_fname)
-        self.canvas_L.setPixmap(self.img_vis)
+        # self.image = cv2.cvtColor(cv2.imread(logo_fname), cv2.COLOR_BGR2RGB)
+        # self.seeds = np.zeros(self.image.shape[:2], dtype=np.uint8)
+        # self.img_vis = QtGui.QPixmap(logo_fname)
+        # self.canvas_L.setPixmap(self.img_vis)
+        self.canvas_GV = ImageViewerQt()
+        self.canvas_GV.setImage(QtGui.QPixmap(logo_fname))
+        self.frame_7.layout().insertWidget(0, self.canvas_GV)
 
     # def resize_canvas_event(self, params):
     #     # self.set_img_vis(self.data.data[self.actual_idx, ...])
     #     self.canvas_size = self.canvas_L.size()
+
+    def wheelEvent(self, event):
+        x = int(event.delta() / 120)
+        if not self.marking:
+            if x > 0:
+                idx = min(self.actual_idx + 1, self.data.n_slices - 1)
+                # self.actual_idx = min(self.actual_idx + 1, self.data.n_slices - 1)
+            elif x< 0:
+                idx = max(0, self.actual_idx - 1)
+                # self.actual_idx = max(0, self.actual_idx - 1)
+            # self.set_img_vis(self.data.image[self.actual_idx, ...])
+            self.slice_SB.setValue(idx)
+        else:
+            self.linewidth_SB.setValue(self.linewidth_SB.value() + x)
+
+    def handleLeftClick(self, x, y):
+        self.last_pt = (int(x), int(y))
+        # print 'clicked: {}'.format((x, y))
+
+    def handleMouseMove(self, x, y):
+        pt = (int(x), int(y))
+        # print 'moved to: {}'.format(pt)
+        if self.marking:
+            linewidth = self.linewidth_SB.value()
+            cv2.line(self.data.seeds[self.actual_idx, ...], self.last_pt, pt, 255, linewidth)
+            self.last_pt = pt
+            self.image_vis = cv2.cvtColor(self.data.image[self.actual_idx, ...], cv2.COLOR_GRAY2RGB)
+            self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...])] = [255, 0, 0]
+            self.qimage = QtGui.QImage(self.image_vis.data, self.data.n_cols, self.data.n_rows, QtGui.QImage.Format_RGB888)
+            self.canvas_GV.setImage(self.qimage)
 
     def mark_seeds(self, type):
         if type == 'o':
             btn = self.segment_obj_BTN
             self.segment_bgd_BTN.setChecked(False)
             color = OBJ_COLOR
+            self.marking = True
+            self.canvas_GV.leftMouseButtonPressed.connect(self.handleLeftClick)
+            self.canvas_GV.mouseMoved.connect(self.handleMouseMove)
         elif type == 'b':
             btn = self.segment_bgd_BTN
             self.segment_obj_BTN.setChecked(False)
             color = BGD_COLOR
+            self.marking = True
 
         if not btn.isChecked():
+            self.marking = False
+            self.canvas_GV.leftMouseButtonPressed.disconnect()
+            self.canvas_GV.mouseMoved.disconnect()
             return
 
     # def mouse_press_event(self, event):
@@ -128,7 +172,9 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     def slice_SB_changed(self, value):
         self.actual_slice_LBL.setText(str(value + 1))
         self.actual_idx = value
-        self.set_img_vis(self.data.data[self.actual_idx, ...])
+        self.create_img_vis()
+        self.canvas_GV.setImage(self.qimage)
+        # self.set_img_vis(self.image_vis)
 
     def load_data(self, fname=None):
         if fname is None:
@@ -142,15 +188,23 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         # self.min_slice_idx_LBL.setText(str(1))
         self.max_slice_LBL.setText(str(self.data.n_slices))
         self.slice_SB_changed(0)
-        self.set_img_vis(self.data.data[self.actual_idx, ...])
+        self.set_img_vis(self.data.image[self.actual_idx, ...])
+
+    def create_img_vis(self):
+        self.image_vis = cv2.cvtColor(self.data.image[self.actual_idx, ...], cv2.COLOR_GRAY2RGB)
+        self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...])] = [255, 0, 0]
+        self.qimage = QtGui.QImage(self.image_vis.data, self.image_vis.shape[1], self.image_vis.shape[0], QtGui.QImage.Format_RGB888)
+        # self.canvas_GV.setImage(self.qimage)
 
     def set_img_vis(self, img):
         self.img_vis = cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_GRAY2RGB)
-        qimg = QtGui.QImage(self.img_vis.data, self.img_vis.shape[1], self.img_vis.shape[0], QtGui.QImage.Format_RGB888)
-        pixmap = QtGui.QPixmap.fromImage(qimg)
-        pixmap = pixmap.scaled(QtCore.QSize(*self.canvas_size), QtCore.Qt.KeepAspectRatio)
-        # pixmap = pixmap.scaled(self.canvas_L.size(), Qt.KeepAspectRatio)
-        self.canvas_L.setPixmap(pixmap)
+        # qimg = QtGui.QImage(self.img_vis.data, self.img_vis.shape[1], self.img_vis.shape[0], QtGui.QImage.Format_RGB888)
+        # pixmap = QtGui.QPixmap.fromImage(qimg)
+        # pixmap = pixmap.scaled(QtCore.QSize(*self.canvas_size), QtCore.Qt.KeepAspectRatio)
+        # # pixmap = pixmap.scaled(self.canvas_L.size(), Qt.KeepAspectRatio)
+        # self.canvas_L.setPixmap(pixmap)
+        self.qimage = QtGui.QImage(self.img_vis.data, self.img_vis.shape[1], self.img_vis.shape[0], QtGui.QImage.Format_RGB888)
+        self.canvas_GV.setImage(self.qimage)
 
 
 if __name__ == '__main__':

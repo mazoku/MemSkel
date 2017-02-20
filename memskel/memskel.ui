@@ -92,7 +92,7 @@
          <property name="minimumSize">
           <size>
            <width>0</width>
-           <height>60</height>
+           <height>90</height>
           </size>
          </property>
          <property name="maximumSize">
@@ -157,6 +157,12 @@
              </property>
              <item>
               <widget class="QPushButton" name="rectangle_ROI_BTN">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>30</height>
+                </size>
+               </property>
                <property name="text">
                 <string>Rectangle</string>
                </property>
@@ -164,6 +170,12 @@
              </item>
              <item>
               <widget class="QPushButton" name="circle_ROI_BTN">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>30</height>
+                </size>
+               </property>
                <property name="text">
                 <string>Circle</string>
                </property>
@@ -187,13 +199,13 @@
          <property name="minimumSize">
           <size>
            <width>0</width>
-           <height>100</height>
+           <height>130</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
            <width>16777215</width>
-           <height>100</height>
+           <height>140</height>
           </size>
          </property>
          <property name="title">
@@ -223,6 +235,12 @@
              </property>
              <item>
               <widget class="QPushButton" name="segment_img_BTN">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>30</height>
+                </size>
+               </property>
                <property name="text">
                 <string>img</string>
                </property>
@@ -230,6 +248,12 @@
              </item>
              <item>
               <widget class="QPushButton" name="segment_stack_BTN">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>30</height>
+                </size>
+               </property>
                <property name="text">
                 <string>stack</string>
                </property>
@@ -241,8 +265,64 @@
           <item>
            <widget class="QLabel" name="label_3">
             <property name="text">
-             <string>Marking:</string>
+             <string>&lt;b&gt;Marking:&lt;/b&gt;</string>
             </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QFrame" name="frame_8">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Raised</enum>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_10">
+             <property name="spacing">
+              <number>0</number>
+             </property>
+             <property name="margin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="label_5">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>30</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>linewidth:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="linewidth_SB">
+               <property name="maximumSize">
+                <size>
+                 <width>50</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>10</number>
+               </property>
+               <property name="value">
+                <number>1</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
           <item>
@@ -262,6 +342,12 @@
              </property>
              <item>
               <widget class="QPushButton" name="segment_obj_BTN">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>30</height>
+                </size>
+               </property>
                <property name="text">
                 <string>object</string>
                </property>
@@ -272,6 +358,12 @@
              </item>
              <item>
               <widget class="QPushButton" name="segment_bgd_BTN">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>30</height>
+                </size>
+               </property>
                <property name="text">
                 <string>background</string>
                </property>
@@ -319,6 +411,12 @@
           </property>
           <item>
            <widget class="QPushButton" name="skeleton_BTN">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>30</height>
+             </size>
+            </property>
             <property name="text">
              <string>skeletonize</string>
             </property>
@@ -360,6 +458,12 @@
           </property>
           <item>
            <widget class="QPushButton" name="approximation_BTN">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>30</height>
+             </size>
+            </property>
             <property name="text">
              <string>Approximation</string>
             </property>
@@ -460,6 +564,12 @@
           </property>
           <item>
            <widget class="QPushButton" name="eraser_BTN">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>30</height>
+             </size>
+            </property>
             <property name="text">
              <string>Eraser</string>
             </property>
@@ -641,19 +751,6 @@
           <property name="margin">
            <number>0</number>
           </property>
-          <item>
-           <widget class="QLabel" name="canvas_L">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
           <item>
            <widget class="QFrame" name="slice_slider_F">
             <property name="sizePolicy">

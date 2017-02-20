@@ -9,12 +9,12 @@ import cv2
 
 try:
     from PyQt5.QtCore import Qt, QRectF, pyqtSignal, QT_VERSION_STR
-    from PyQt5.QtGui import QImage, QPixmap, QPainterPath
+    from PyQt5.QtGui import QImage, QPixmap, QPainterPath, QBrush, QColor
     from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QFileDialog
 except ImportError:
     try:
         from PyQt4.QtCore import Qt, QRectF, pyqtSignal, QT_VERSION_STR
-        from PyQt4.QtGui import QGraphicsView, QGraphicsScene, QImage, QPixmap, QPainterPath, QFileDialog
+        from PyQt4.QtGui import QGraphicsView, QGraphicsScene, QImage, QPixmap, QPainterPath, QFileDialog, QBrush, QColor
     except ImportError:
         raise ImportError("ImageViewerQt: Requires PyQt5 or PyQt4.")
 
@@ -51,6 +51,7 @@ class ImageViewerQt(QGraphicsView):
 
         # Image is displayed as a QPixmap in a QGraphicsScene attached to this QGraphicsView.
         self.scene = QGraphicsScene()
+        # self.scene.setBackgroundBrush(QBrush(Qt.black))
         self.setScene(self.scene)
 
         # Store a local handle to the scene's current image pixmap.
@@ -161,7 +162,7 @@ class ImageViewerQt(QGraphicsView):
         # QGraphicsView.mousePressEvent(self, event)
 
     def mouseMoveEvent(self, event):
-        if (event.buttons() & Qt.LeftButton):# and self.marking:
+        if event.buttons() & Qt.LeftButton:# and self.marking:
             scenePos = self.mapToScene(event.pos())
             self.mouseMoved.emit(scenePos.x(), scenePos.y())
 
@@ -223,8 +224,8 @@ if __name__ == '__main__':
             self.viewer.setImage(self.qimage)
 
             self.seeds = np.zeros(self.image.shape[:2], dtype=np.uint8)
-            self.red = np.zeros(self.image.shape, dtype=np.uint8)
-            self.red[:, :, 0] = 255
+            # self.red = np.zeros(self.image.shape, dtype=np.uint8)
+            # self.red[:, :, 0] = 255
 
             self.viewer.leftMouseButtonPressed.connect(self.handleLeftClick)
             self.viewer.mouseMoved.connect(self.handleMouseMove)
