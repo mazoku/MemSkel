@@ -1,6 +1,7 @@
 from __future__ import division
 __author__ = 'Ryba'
 
+# TODO: zpravy do statusbaru
 # # py2exe and libtiff stuff
 # import sys
 # # sys.path += ['.']
@@ -49,10 +50,14 @@ import cv2
 
 from imagedata import ImageData
 from MyImageViewer import ImageViewerQt
+from segmentator import Segmentator
 
 # ----
-OBJ_COLOR = [255, 0, 0]  # QtCore.Qt.red
-BGD_COLOR = [0, 0, 255]  # QtCore.Qt.blue
+from constants import *
+# OBJ_COLOR = [255, 0, 0]  # QtCore.Qt.red
+# BGD_COLOR = [0, 0, 255]  # QtCore.Qt.blue
+# OBJ_SEED_LBL = 1
+# BGD_SEED_LBL = 2
 
 
 class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
@@ -67,7 +72,11 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.actual_idx = 0  # index of actual (displayed) slice/frame of data
         self.data_fname = None
         self.data = ImageData()
+        self.segmentator = Segmentator()
+        self.segmentator.data = self.data
         self.marking = False  # flag whether the user is marking seed points
+        self.pen_color = None
+        self.seed_lbl = None
         # self.x
 
         # OVERRIDING ----
@@ -93,6 +102,12 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     # def resize_canvas_event(self, params):
     #     # self.set_img_vis(self.data.data[self.actual_idx, ...])
     #     self.canvas_size = self.canvas_L.size()
+    #     self.center()
+
+    def center(self):
+        screen = QtGui.QDesktopWidget().screenGeometry()
+        size = self.geometry()
+        self.move((screen.width() - size.width()) / 2, (screen.height() - size.height()) / 2)
 
     def wheelEvent(self, event):
         x = int(event.delta() / 120)
@@ -117,29 +132,45 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         # print 'moved to: {}'.format(pt)
         if self.marking:
             linewidth = self.linewidth_SB.value()
-            cv2.line(self.data.seeds[self.actual_idx, ...], self.last_pt, pt, 255, linewidth)
+            # cv2.line(self.data.seeds[self.actual_idx, ...], self.last_pt, pt, 255, linewidth)
+            cv2.line(self.data.seeds[self.actual_idx, ...], self.last_pt, pt, self.seed_lbl, linewidth)
             self.last_pt = pt
-            self.image_vis = cv2.cvtColor(self.data.image[self.actual_idx, ...], cv2.COLOR_GRAY2RGB)
-            self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...])] = [255, 0, 0]
-            self.qimage = QtGui.QImage(self.image_vis.data, self.data.n_cols, self.data.n_rows, QtGui.QImage.Format_RGB888)
+            # self.image_vis = cv2.cvtColor(self.data.image[self.actual_idx, ...], cv2.COLOR_GRAY2RGB)
+            # self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...])] = self.pen_color#[255, 0, 0]
+            # self.qimage = QtGui.QImage(self.image_vis.data, self.data.n_cols, self.data.n_rows, QtGui.QImage.Format_RGB888)
+            self.create_img_vis()
             self.canvas_GV.setImage(self.qimage)
+
+    def set_marking(self, value):
+        self.marking = value
+        if self.marking:
+            self.canvas_GV.setCursor(QtCore.Qt.CrossCursor)
+        else:
+            self.canvas_GV.setCursor(QtCore.Qt.ArrowCursor)
 
     def mark_seeds(self, type):
         if type == 'o':
             btn = self.segment_obj_BTN
             self.segment_bgd_BTN.setChecked(False)
-            color = OBJ_COLOR
-            self.marking = True
+            self.pen_color = OBJ_COLOR
+            self.seed_lbl = OBJ_SEED_LBL
+            # self.marking = True
+            self.set_marking(True)
             self.canvas_GV.leftMouseButtonPressed.connect(self.handleLeftClick)
             self.canvas_GV.mouseMoved.connect(self.handleMouseMove)
         elif type == 'b':
             btn = self.segment_bgd_BTN
             self.segment_obj_BTN.setChecked(False)
-            color = BGD_COLOR
-            self.marking = True
+            self.pen_color = BGD_COLOR
+            self.seed_lbl = BGD_SEED_LBL
+            # self.marking = True
+            self.set_marking(True)
+            self.canvas_GV.leftMouseButtonPressed.connect(self.handleLeftClick)
+            self.canvas_GV.mouseMoved.connect(self.handleMouseMove)
 
         if not btn.isChecked():
-            self.marking = False
+            # self.marking = False
+            self.set_marking(False)
             self.canvas_GV.leftMouseButtonPressed.disconnect()
             self.canvas_GV.mouseMoved.disconnect()
             return
@@ -192,7 +223,9 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
 
     def create_img_vis(self):
         self.image_vis = cv2.cvtColor(self.data.image[self.actual_idx, ...], cv2.COLOR_GRAY2RGB)
-        self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...])] = [255, 0, 0]
+        # self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...])] = [255, 0, 0]
+        self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...] == OBJ_SEED_LBL)] = OBJ_COLOR
+        self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...] == BGD_SEED_LBL)] = BGD_COLOR
         self.qimage = QtGui.QImage(self.image_vis.data, self.image_vis.shape[1], self.image_vis.shape[0], QtGui.QImage.Format_RGB888)
         # self.canvas_GV.setImage(self.qimage)
 

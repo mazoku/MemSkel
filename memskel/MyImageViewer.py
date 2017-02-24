@@ -1,8 +1,3 @@
-""" ImageViewer.py: PyQt image viewer widget for a QPixmap in a QGraphicsView scene with mouse zooming and panning.
-"""
-# TODO: zjednodusit odstranenim moznosti zoomovat a posouvat
-# TODO: nektere emity signalu jsou zbytecne, napr. radek 163, 164 (smazanim nedojde ke zmene)
-
 import os.path
 import numpy as np
 import cv2

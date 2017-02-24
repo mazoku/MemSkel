@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from libtiff import TIFFimage
 from PIL import Image
 
+
 class ImageData:
 
     def __init__(self):
@@ -21,9 +22,9 @@ class ImageData:
         self.image = self.pilImg2npArray(Image.open(fname)).astype(np.uint8)
         # self.data = cv2.imread(fname)
         # self.data = cv2.imreadmulti(fname)
-        self.segmentation = np.zeros(self.image.shape)
-        self.seeds = np.zeros(self.image.shape)
-        self.roi = np.zeros(self.image.shape)
+        self.segmentation = np.zeros(self.image.shape, dtype=np.uint8)
+        self.seeds = np.zeros(self.image.shape, dtype=np.uint8)
+        self.roi = np.zeros(self.image.shape, dtype=np.uint8)
         self.n_slices, self.n_rows, self.n_cols = self.image.shape
 
     def pilImg2npArray(self, im):
