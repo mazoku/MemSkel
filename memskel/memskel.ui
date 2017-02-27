@@ -341,7 +341,7 @@
               <number>0</number>
              </property>
              <item>
-              <widget class="QPushButton" name="segment_obj_BTN">
+              <widget class="QPushButton" name="mark_obj_BTN">
                <property name="minimumSize">
                 <size>
                  <width>0</width>
@@ -357,7 +357,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QPushButton" name="segment_bgd_BTN">
+              <widget class="QPushButton" name="mark_bgd_BTN">
                <property name="minimumSize">
                 <size>
                  <width>0</width>

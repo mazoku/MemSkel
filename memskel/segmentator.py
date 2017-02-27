@@ -9,6 +9,7 @@ import numpy as np
 import skimage.morphology as skimor
 import matplotlib.pyplot as plt
 from constants import *
+import cv2
 
 
 class Segmentator:
@@ -37,10 +38,12 @@ class Segmentator:
         self.ball_mask[:, :, 1] = np.tile(np.arange(- self.ball_radius, self.ball_radius + 1), [2 * self.ball_radius + 1, 1])
         self.ball_mask[:, :, 0] = self.ball_mask[:, :, 1].conj().transpose()
 
-    def segment(self, slice_idx, progress_fig=False):
+    def segment(self, slice_idx, update_rate=10, progress_fig=False):
         '''
         Run the segmentation process until convergence or max. number of iterations is achieved
         :param slice_idx: index of current slice
+        :param update_rate: number of iterations until figures update
+        :param progress_fig: whether to show independent visualization window
         :return: segmentation ndarray
         '''
         it = 0
@@ -203,6 +206,7 @@ if __name__ == '__main__':
     rad = 10
     if c == (0, 0):
         done = False
+
         def mouse_callback(event, x, y, flags, param):
             global c, done
             if event == cv2.EVENT_MOUSEMOVE:

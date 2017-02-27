@@ -24,7 +24,7 @@ class ImageData:
         # self.data = cv2.imreadmulti(fname)
         self.segmentation = np.zeros(self.image.shape, dtype=np.uint8)
         self.seeds = np.zeros(self.image.shape, dtype=np.uint8)
-        self.roi = np.zeros(self.image.shape, dtype=np.uint8)
+        self.roi = np.ones(self.image.shape, dtype=np.uint8)
         self.n_slices, self.n_rows, self.n_cols = self.image.shape
 
     def pilImg2npArray(self, im):

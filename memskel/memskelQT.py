@@ -77,6 +77,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.marking = False  # flag whether the user is marking seed points
         self.pen_color = None
         self.seed_lbl = None
+        self.disp_membrane = self.disp_membrane_BTN.isChecked()
         # self.x
 
         # OVERRIDING ----
@@ -86,8 +87,10 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         # SIGNALS ----
         self.open_BTN.clicked.connect(self.load_data)
         self.slice_SB.valueChanged.connect(self.slice_SB_changed)
-        self.segment_obj_BTN.clicked.connect(lambda: self.mark_seeds('o'))
-        self.segment_bgd_BTN.clicked.connect(lambda: self.mark_seeds('b'))
+        self.mark_obj_BTN.clicked.connect(lambda: self.mark_seeds('o'))
+        self.mark_bgd_BTN.clicked.connect(lambda: self.mark_seeds('b'))
+        self.segment_img_BTN.clicked.connect(lambda: self.segment_img(twoD=True))
+        self.disp_membrane_BTN.clicked.connect(self.disp_membrane_clicked)
 
         # display default image
         logo_fname = 'data/icons/kky.png'
@@ -103,6 +106,16 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     #     # self.set_img_vis(self.data.data[self.actual_idx, ...])
     #     self.canvas_size = self.canvas_L.size()
     #     self.center()
+
+    def disp_membrane_clicked(self):
+        self.disp_membrane = self.disp_membrane_BTN.isChecked()
+        self.create_img_vis()
+
+    def segment_img(self, twoD=True):
+        self.statusbar.showMessage('Segmenting img')
+        self.segmentator.max_iterations = 20
+        self.segmentator.segment(self.actual_idx, progress_fig=False)
+        self.statusbar.showMessage('Segmentation done')
 
     def center(self):
         screen = QtGui.QDesktopWidget().screenGeometry()
@@ -150,8 +163,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
 
     def mark_seeds(self, type):
         if type == 'o':
-            btn = self.segment_obj_BTN
-            self.segment_bgd_BTN.setChecked(False)
+            btn = self.mark_obj_BTN
+            self.mark_bgd_BTN.setChecked(False)
             self.pen_color = OBJ_COLOR
             self.seed_lbl = OBJ_SEED_LBL
             # self.marking = True
@@ -159,8 +172,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             self.canvas_GV.leftMouseButtonPressed.connect(self.handleLeftClick)
             self.canvas_GV.mouseMoved.connect(self.handleMouseMove)
         elif type == 'b':
-            btn = self.segment_bgd_BTN
-            self.segment_obj_BTN.setChecked(False)
+            btn = self.mark_bgd_BTN
+            self.mark_obj_BTN.setChecked(False)
             self.pen_color = BGD_COLOR
             self.seed_lbl = BGD_SEED_LBL
             # self.marking = True
@@ -214,6 +227,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             self.data_fname = fname
         self.data.load(self.data_fname)
 
+        self.segmentator.data = self.data
+
         # scrolbar update
         self.slice_SB.setMaximum(self.data.n_slices - 1)
         # self.min_slice_idx_LBL.setText(str(1))
@@ -221,13 +236,22 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.slice_SB_changed(0)
         self.set_img_vis(self.data.image[self.actual_idx, ...])
 
-    def create_img_vis(self):
+    def create_img_vis(self, update=True):
         self.image_vis = cv2.cvtColor(self.data.image[self.actual_idx, ...], cv2.COLOR_GRAY2RGB)
+        # im1 = self.image_vis.copy()
+        # overlay = cv2.addWeighted(self.)
+        if self.disp_membrane:
+            # self.image_vis[np.nonzero(self.data.segmentation[self.actual_idx, ...])] = MEMBRANE_COLOR
+            memb = self.image_vis.copy()
+            memb[np.nonzero(self.data.segmentation[self.actual_idx, ...])] = MEMBRANE_COLOR
+            self.image_vis = cv2.addWeighted(memb, MEMBRANE_ALPHA, self.image_vis, 1 - MEMBRANE_ALPHA, 0)
         # self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...])] = [255, 0, 0]
         self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...] == OBJ_SEED_LBL)] = OBJ_COLOR
         self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...] == BGD_SEED_LBL)] = BGD_COLOR
         self.qimage = QtGui.QImage(self.image_vis.data, self.image_vis.shape[1], self.image_vis.shape[0], QtGui.QImage.Format_RGB888)
-        # self.canvas_GV.setImage(self.qimage)
+
+        if update:
+            self.canvas_GV.setImage(self.qimage)
 
     def set_img_vis(self, img):
         self.img_vis = cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_GRAY2RGB)
