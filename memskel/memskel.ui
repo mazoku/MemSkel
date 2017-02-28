@@ -704,6 +704,16 @@
            </widget>
           </item>
           <item>
+           <widget class="QPushButton" name="disp_seeds_BTN">
+            <property name="text">
+             <string>seeds</string>
+            </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QPushButton" name="disp_membrane_BTN">
             <property name="text">
              <string>membrane</string>

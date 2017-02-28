@@ -1,7 +1,10 @@
 from __future__ import division
 __author__ = 'Ryba'
 
-# TODO: zpravy do statusbaru
+# TODO -----------------------------
+#   - zpravy do statusbaru
+#   - po kliknuti na tlacitko definovani circ ROIe priconnectit prislusne mouse eventy jako v mark_seeds()
+# TODO -----------------------------
 # # py2exe and libtiff stuff
 # import sys
 # # sys.path += ['.']
@@ -78,6 +81,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.pen_color = None
         self.seed_lbl = None
         self.disp_membrane = self.disp_membrane_BTN.isChecked()
+        self.disp_seeds = self.disp_seeds_BTN.isChecked()
         # self.x
 
         # OVERRIDING ----
@@ -91,6 +95,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.mark_bgd_BTN.clicked.connect(lambda: self.mark_seeds('b'))
         self.segment_img_BTN.clicked.connect(lambda: self.segment_img(twoD=True))
         self.disp_membrane_BTN.clicked.connect(self.disp_membrane_clicked)
+        self.disp_seeds_BTN.clicked.connect(self.disp_seeds_clicked)
 
         # display default image
         logo_fname = 'data/icons/kky.png'
@@ -107,8 +112,15 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     #     self.canvas_size = self.canvas_L.size()
     #     self.center()
 
+    # def define_circle_roi(self):
+
+
     def disp_membrane_clicked(self):
         self.disp_membrane = self.disp_membrane_BTN.isChecked()
+        self.create_img_vis()
+
+    def disp_seeds_clicked(self):
+        self.disp_seeds = self.disp_seeds_BTN.isChecked()
         self.create_img_vis()
 
     def segment_img(self, twoD=True):
@@ -153,6 +165,9 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             # self.qimage = QtGui.QImage(self.image_vis.data, self.data.n_cols, self.data.n_rows, QtGui.QImage.Format_RGB888)
             self.create_img_vis()
             self.canvas_GV.setImage(self.qimage)
+        # if self.defining_circ_roi:
+        #     self.create_img_vis(update=True, circ=(pt, self.circ_roi_rad))
+            # self.canvas_GV.setImage(self.qimage)
 
     def set_marking(self, value):
         self.marking = value
@@ -162,6 +177,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             self.canvas_GV.setCursor(QtCore.Qt.ArrowCursor)
 
     def mark_seeds(self, type):
+        self.disp_seeds_BTN.setChecked(True)
+        self.disp_seeds = True
         if type == 'o':
             btn = self.mark_obj_BTN
             self.mark_bgd_BTN.setChecked(False)
@@ -236,8 +253,11 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.slice_SB_changed(0)
         self.set_img_vis(self.data.image[self.actual_idx, ...])
 
-    def create_img_vis(self, update=True):
-        self.image_vis = cv2.cvtColor(self.data.image[self.actual_idx, ...], cv2.COLOR_GRAY2RGB)
+    def create_img_vis(self, img=None, update=True, circ=None):
+        if img is None:
+            self.image_vis = cv2.cvtColor(self.data.image[self.actual_idx, ...], cv2.COLOR_GRAY2RGB)
+        else:
+            self.image_vis = img
         # im1 = self.image_vis.copy()
         # overlay = cv2.addWeighted(self.)
         if self.disp_membrane:
@@ -246,8 +266,9 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             memb[np.nonzero(self.data.segmentation[self.actual_idx, ...])] = MEMBRANE_COLOR
             self.image_vis = cv2.addWeighted(memb, MEMBRANE_ALPHA, self.image_vis, 1 - MEMBRANE_ALPHA, 0)
         # self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...])] = [255, 0, 0]
-        self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...] == OBJ_SEED_LBL)] = OBJ_COLOR
-        self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...] == BGD_SEED_LBL)] = BGD_COLOR
+        if self.disp_seeds:
+            self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...] == OBJ_SEED_LBL)] = OBJ_COLOR
+            self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...] == BGD_SEED_LBL)] = BGD_COLOR
         self.qimage = QtGui.QImage(self.image_vis.data, self.image_vis.shape[1], self.image_vis.shape[0], QtGui.QImage.Format_RGB888)
 
         if update:
