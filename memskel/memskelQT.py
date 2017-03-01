@@ -2,8 +2,8 @@ from __future__ import division
 __author__ = 'Ryba'
 
 # TODO -----------------------------
+#   - vizualizace ROIe
 #   - zpravy do statusbaru
-#   - po kliknuti na tlacitko definovani circ ROIe priconnectit prislusne mouse eventy jako v mark_seeds()
 # TODO -----------------------------
 # # py2exe and libtiff stuff
 # import sys
@@ -96,6 +96,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.segment_img_BTN.clicked.connect(lambda: self.segment_img(twoD=True))
         self.disp_membrane_BTN.clicked.connect(self.disp_membrane_clicked)
         self.disp_seeds_BTN.clicked.connect(self.disp_seeds_clicked)
+        self.circle_ROI_BTN.clicked.connect(self.define_circle_roi)
 
         # display default image
         logo_fname = 'data/icons/kky.png'
@@ -112,8 +113,14 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     #     self.canvas_size = self.canvas_L.size()
     #     self.center()
 
-    # def define_circle_roi(self):
-
+    def define_circle_roi(self):
+        if self.circle_ROI_BTN.isChecked():
+            self.canvas_GV.setMouseTracking(True)
+            self.canvas_GV.leftMouseButtonPressed.connect(self.circ_roi_left_click)
+            self.canvas_GV.mouseMoved.connect(self.circ_roi_mouse_move)
+        else:
+            self.canvas_GV.leftMouseButtonPressed.disconnect()
+            self.canvas_GV.mouseMoved.disconnect()
 
     def disp_membrane_clicked(self):
         self.disp_membrane = self.disp_membrane_BTN.isChecked()
@@ -148,26 +155,46 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         else:
             self.linewidth_SB.setValue(self.linewidth_SB.value() + x)
 
-    def handleLeftClick(self, x, y):
+    def marking_left_click(self, x, y):
         self.last_pt = (int(x), int(y))
         # print 'clicked: {}'.format((x, y))
 
-    def handleMouseMove(self, x, y):
+    def marking_mouse_move(self, x, y):
         pt = (int(x), int(y))
         # print 'moved to: {}'.format(pt)
-        if self.marking:
-            linewidth = self.linewidth_SB.value()
-            # cv2.line(self.data.seeds[self.actual_idx, ...], self.last_pt, pt, 255, linewidth)
-            cv2.line(self.data.seeds[self.actual_idx, ...], self.last_pt, pt, self.seed_lbl, linewidth)
-            self.last_pt = pt
-            # self.image_vis = cv2.cvtColor(self.data.image[self.actual_idx, ...], cv2.COLOR_GRAY2RGB)
-            # self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...])] = self.pen_color#[255, 0, 0]
-            # self.qimage = QtGui.QImage(self.image_vis.data, self.data.n_cols, self.data.n_rows, QtGui.QImage.Format_RGB888)
-            self.create_img_vis()
-            self.canvas_GV.setImage(self.qimage)
+        # if self.marking:
+        linewidth = self.linewidth_SB.value()
+        # cv2.line(self.data.seeds[self.actual_idx, ...], self.last_pt, pt, 255, linewidth)
+        cv2.line(self.data.seeds[self.actual_idx, ...], self.last_pt, pt, self.seed_lbl, linewidth)
+        self.last_pt = pt
+        # self.image_vis = cv2.cvtColor(self.data.image[self.actual_idx, ...], cv2.COLOR_GRAY2RGB)
+        # self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...])] = self.pen_color#[255, 0, 0]
+        # self.qimage = QtGui.QImage(self.image_vis.data, self.data.n_cols, self.data.n_rows, QtGui.QImage.Format_RGB888)
+        self.create_img_vis(update=True)
+        # self.canvas_GV.setImage(self.qimage)
         # if self.defining_circ_roi:
         #     self.create_img_vis(update=True, circ=(pt, self.circ_roi_rad))
             # self.canvas_GV.setImage(self.qimage)
+
+    def circ_roi_left_click(self, x, y):
+        # self.circ_roi = (x, y, self.radius_SB.value())
+        # self.
+        x = int(round(x))
+        y = int(round(y))
+        print 'clicked: ({}, {})'.format(x, y)
+        self.canvas_GV.setMouseTracking(False)
+        self.circle_ROI_BTN.setChecked(False)
+        circ = cv2.circle(np.zeros(self.data.image[self.actual_idx, ...].shape, dtype=np.uint8),
+                          (x, y), self.circ_roi_radius_SB.value(), 1, -1)
+        self.data.roi *= circ
+        self.define_circle_roi()
+        self.create_img_vis()
+
+    def circ_roi_mouse_move(self, x, y):
+        x = int(round(x))
+        y = int(round(y))
+        print 'moved: ({}, {})'.format(x, y)
+        self.create_img_vis(circ=(x, y, self.circ_roi_radius_SB.value()), update=True)
 
     def set_marking(self, value):
         self.marking = value
@@ -186,8 +213,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             self.seed_lbl = OBJ_SEED_LBL
             # self.marking = True
             self.set_marking(True)
-            self.canvas_GV.leftMouseButtonPressed.connect(self.handleLeftClick)
-            self.canvas_GV.mouseMoved.connect(self.handleMouseMove)
+            self.canvas_GV.leftMouseButtonPressed.connect(self.marking_left_click)
+            self.canvas_GV.mouseMoved.connect(self.marking_mouse_move)
         elif type == 'b':
             btn = self.mark_bgd_BTN
             self.mark_obj_BTN.setChecked(False)
@@ -204,31 +231,6 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             self.canvas_GV.leftMouseButtonPressed.disconnect()
             self.canvas_GV.mouseMoved.disconnect()
             return
-
-    # def mouse_press_event(self, event):
-    #     if event.button() == QtCore.Qt.LeftButton:
-    #         self.lastPoint = event.pos()
-    #         self.marking = True
-    #
-    # def mouse_move_event(self, event):
-    #     if (event.buttons() & QtCore.Qt.LeftButton) and self.marking:
-    #         self.drawLineTo(event.pos())
-    #
-    # def mouse_release_event(self, event):
-    #     if event.button() == QtCore.Qt.LeftButton and self.marking:
-    #         self.drawLineTo(event.pos())
-    #         self.marking = False
-    #
-    # def drawLineTo(self, endPoint):
-    #     painter = QtGui.QPainter(self.image)
-    #     painter.setPen(QtCore.QPen(self.myPenColor, self.myPenWidth, QtCore.Qt.SolidLine,
-    #                                QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
-    #     painter.drawLine(self.lastPoint, endPoint)
-    #     self.modified = True
-    #
-    #     rad = self.myPenWidth / 2 + 2
-    #     self.update(QtCore.QRect(self.lastPoint, endPoint).normalized().adjusted(-rad, -rad, +rad, +rad))
-    #     self.lastPoint = QtCore.QPoint(endPoint)
 
     def slice_SB_changed(self, value):
         self.actual_slice_LBL.setText(str(value + 1))
@@ -269,6 +271,9 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         if self.disp_seeds:
             self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...] == OBJ_SEED_LBL)] = OBJ_COLOR
             self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...] == BGD_SEED_LBL)] = BGD_COLOR
+
+        if circ is not None:
+            cv2.circle(self.image_vis, circ[:2], circ[2], CIRC_ROI_COLOR, 1)
         self.qimage = QtGui.QImage(self.image_vis.data, self.image_vis.shape[1], self.image_vis.shape[0], QtGui.QImage.Format_RGB888)
 
         if update:

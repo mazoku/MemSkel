@@ -157,9 +157,9 @@ class ImageViewerQt(QGraphicsView):
         # QGraphicsView.mousePressEvent(self, event)
 
     def mouseMoveEvent(self, event):
-        if event.buttons() & Qt.LeftButton:# and self.marking:
-            scenePos = self.mapToScene(event.pos())
-            self.mouseMoved.emit(scenePos.x(), scenePos.y())
+        # if event.buttons() & Qt.LeftButton:# and self.marking:
+        scenePos = self.mapToScene(event.pos())
+        self.mouseMoved.emit(scenePos.x(), scenePos.y())
 
     def mouseReleaseEvent(self, event):
         """ Stop mouse pan or zoom mode (apply zoom if valid).
