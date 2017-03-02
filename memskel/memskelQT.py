@@ -80,6 +80,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.marking = False  # flag whether the user is marking seed points
         self.pen_color = None
         self.seed_lbl = None
+        self.circ_roi = [0, 0, 0]  # circular roi
         self.disp_membrane = self.disp_membrane_BTN.isChecked()
         self.disp_seeds = self.disp_seeds_BTN.isChecked()
         # self.x
@@ -97,6 +98,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.disp_membrane_BTN.clicked.connect(self.disp_membrane_clicked)
         self.disp_seeds_BTN.clicked.connect(self.disp_seeds_clicked)
         self.circle_ROI_BTN.clicked.connect(self.define_circle_roi)
+        self.disp_roi_BTN.clicked.connect(self.disp_roi_clicked)
 
         # display default image
         logo_fname = 'data/icons/kky.png'
@@ -113,6 +115,9 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     #     self.canvas_size = self.canvas_L.size()
     #     self.center()
 
+    def disp_roi_clicked(self):
+        self.create_img_vis(update=True)
+
     def define_circle_roi(self):
         if self.circle_ROI_BTN.isChecked():
             self.canvas_GV.setMouseTracking(True)
@@ -121,14 +126,15 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         else:
             self.canvas_GV.leftMouseButtonPressed.disconnect()
             self.canvas_GV.mouseMoved.disconnect()
+            self.create_img_vis(update=True)
 
     def disp_membrane_clicked(self):
         self.disp_membrane = self.disp_membrane_BTN.isChecked()
-        self.create_img_vis()
+        self.create_img_vis(update=True)
 
     def disp_seeds_clicked(self):
         self.disp_seeds = self.disp_seeds_BTN.isChecked()
-        self.create_img_vis()
+        self.create_img_vis(update=True)
 
     def segment_img(self, twoD=True):
         self.statusbar.showMessage('Segmenting img')
@@ -143,7 +149,17 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
 
     def wheelEvent(self, event):
         x = int(event.delta() / 120)
-        if not self.marking:
+        if self.circle_ROI_BTN.isChecked():
+            self.circ_roi_radius_SB.setValue(self.circ_roi_radius_SB.value() + x)
+            self.circ_roi[2] = self.circ_roi_radius_SB.value()
+            # x = int(round(event.x()))
+            # y = int(round(event.y()))
+            # circ = (x, y, self.circ_roi_radius_SB.value())
+            # print circ
+            self.create_img_vis(update=True)
+        elif self.marking:
+            self.linewidth_SB.setValue(self.linewidth_SB.value() + x)
+        else:  # not self.marking:
             if x > 0:
                 idx = min(self.actual_idx + 1, self.data.n_slices - 1)
                 # self.actual_idx = min(self.actual_idx + 1, self.data.n_slices - 1)
@@ -152,8 +168,6 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
                 # self.actual_idx = max(0, self.actual_idx - 1)
             # self.set_img_vis(self.data.image[self.actual_idx, ...])
             self.slice_SB.setValue(idx)
-        else:
-            self.linewidth_SB.setValue(self.linewidth_SB.value() + x)
 
     def marking_left_click(self, x, y):
         self.last_pt = (int(x), int(y))
@@ -181,20 +195,24 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         # self.
         x = int(round(x))
         y = int(round(y))
-        print 'clicked: ({}, {})'.format(x, y)
         self.canvas_GV.setMouseTracking(False)
         self.circle_ROI_BTN.setChecked(False)
         circ = cv2.circle(np.zeros(self.data.image[self.actual_idx, ...].shape, dtype=np.uint8),
                           (x, y), self.circ_roi_radius_SB.value(), 1, -1)
         self.data.roi *= circ
         self.define_circle_roi()
+        self.disp_roi_BTN.setChecked(True)
+        self.disp_roi_clicked()
+        self.circ_roi = [x, y, self.circ_roi_radius_SB.value()]
         self.create_img_vis()
 
     def circ_roi_mouse_move(self, x, y):
         x = int(round(x))
         y = int(round(y))
-        print 'moved: ({}, {})'.format(x, y)
-        self.create_img_vis(circ=(x, y, self.circ_roi_radius_SB.value()), update=True)
+        # print 'moved to {}'.format((x, y))
+        self.circ_roi = [x, y, self.circ_roi_radius_SB.value()]
+        # self.create_img_vis(circ=(x, y, self.circ_roi_radius_SB.value()), update=True)
+        self.create_img_vis(update=True)
 
     def set_marking(self, value):
         self.marking = value
@@ -262,18 +280,27 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             self.image_vis = img
         # im1 = self.image_vis.copy()
         # overlay = cv2.addWeighted(self.)
+
+        if self.disp_roi_BTN.isChecked():
+            roi = self.image_vis.copy()
+            roi[np.nonzero(self.data.roi[self.actual_idx, ...])] = ROI_COLOR
+            self.image_vis = cv2.addWeighted(roi, ROI_ALPHA, self.image_vis, 1 - ROI_ALPHA, 0)
+
+        if self.disp_seeds:
+            self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...] == OBJ_SEED_LBL)] = OBJ_COLOR
+            self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...] == BGD_SEED_LBL)] = BGD_COLOR
+
         if self.disp_membrane:
             # self.image_vis[np.nonzero(self.data.segmentation[self.actual_idx, ...])] = MEMBRANE_COLOR
             memb = self.image_vis.copy()
             memb[np.nonzero(self.data.segmentation[self.actual_idx, ...])] = MEMBRANE_COLOR
             self.image_vis = cv2.addWeighted(memb, MEMBRANE_ALPHA, self.image_vis, 1 - MEMBRANE_ALPHA, 0)
         # self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...])] = [255, 0, 0]
-        if self.disp_seeds:
-            self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...] == OBJ_SEED_LBL)] = OBJ_COLOR
-            self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...] == BGD_SEED_LBL)] = BGD_COLOR
 
-        if circ is not None:
-            cv2.circle(self.image_vis, circ[:2], circ[2], CIRC_ROI_COLOR, 1)
+        # if circ is not None:
+        #     cv2.circle(self.image_vis, circ[:2], circ[2], CIRC_ROI_COLOR, 1)
+        if self.circle_ROI_BTN.isChecked():
+            cv2.circle(self.image_vis, tuple(self.circ_roi[:2]), self.circ_roi[2], CIRC_ROI_COLOR, 1)
         self.qimage = QtGui.QImage(self.image_vis.data, self.image_vis.shape[1], self.image_vis.shape[0], QtGui.QImage.Format_RGB888)
 
         if update:
