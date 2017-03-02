@@ -47,6 +47,7 @@ import sys
 from PyQt4 import QtCore, QtGui
 from memskel_GUI_QT import Ui_MainWindow
 
+from collections import namedtuple
 import numpy as np
 import skimage.io as skiio
 import cv2
@@ -80,7 +81,10 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.marking = False  # flag whether the user is marking seed points
         self.pen_color = None
         self.seed_lbl = None
-        self.circ_roi = [0, 0, 0]  # circular roi
+        # self.circ_roi = [0, 0, 0]  # circular roi
+        self.circ_roi = {'center':(0, 0), 'radius':self.circ_roi_radius_SB.value()}
+        self.rect_roi = {'pt1': None, 'pt2': None}
+        self.rect_roi_pts_clicked = 0
         self.disp_membrane = self.disp_membrane_BTN.isChecked()
         self.disp_seeds = self.disp_seeds_BTN.isChecked()
         # self.x
@@ -98,7 +102,10 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.disp_membrane_BTN.clicked.connect(self.disp_membrane_clicked)
         self.disp_seeds_BTN.clicked.connect(self.disp_seeds_clicked)
         self.circle_ROI_BTN.clicked.connect(self.define_circle_roi)
+        self.rectangle_ROI_BTN.clicked.connect(self.define_rect_roi)
         self.disp_roi_BTN.clicked.connect(self.disp_roi_clicked)
+        self.threshold_BTN.clicked.connect(self.threshold_clicked)
+        self.threshold_SB.valueChanged.connect(self.threshold_changed)
 
         # display default image
         logo_fname = 'data/icons/kky.png'
@@ -115,6 +122,20 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     #     self.canvas_size = self.canvas_L.size()
     #     self.center()
 
+    def threshold_clicked(self):
+        if self.threshold_BTN.isChecked():
+            self.disp_roi_BTN.setChecked(True)
+            t = self.segmentator.get_threshold(self.data.image[self.actual_idx, ...], pt=70)
+            self.threshold_SB.setValue(t)
+            # self.data.thresh_roi[self.actual_idx, ...] = mask
+            self.data.update_roi()
+            self.create_img_vis(update=True)
+
+    def threshold_changed(self, x):
+        self.data.thresh_roi[self.actual_idx, ...] = self.data.image[self.actual_idx, ...] > x
+        self.data.update_roi()
+        self.create_img_vis(update=True)
+
     def disp_roi_clicked(self):
         self.create_img_vis(update=True)
 
@@ -124,6 +145,18 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             self.canvas_GV.leftMouseButtonPressed.connect(self.circ_roi_left_click)
             self.canvas_GV.mouseMoved.connect(self.circ_roi_mouse_move)
         else:
+            self.canvas_GV.setMouseTracking(False)
+            self.canvas_GV.leftMouseButtonPressed.disconnect()
+            self.canvas_GV.mouseMoved.disconnect()
+            self.create_img_vis(update=True)
+
+    def define_rect_roi(self):
+        if self.rectangle_ROI_BTN.isChecked():
+            self.canvas_GV.setMouseTracking(True)
+            self.canvas_GV.leftMouseButtonPressed.connect(self.rect_roi_left_click)
+            # self.canvas_GV.mouseMoved.connect(self.rect_roi_mouse_move)
+        else:
+            self.canvas_GV.setMouseTracking(False)
             self.canvas_GV.leftMouseButtonPressed.disconnect()
             self.canvas_GV.mouseMoved.disconnect()
             self.create_img_vis(update=True)
@@ -151,12 +184,15 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         x = int(event.delta() / 120)
         if self.circle_ROI_BTN.isChecked():
             self.circ_roi_radius_SB.setValue(self.circ_roi_radius_SB.value() + x)
-            self.circ_roi[2] = self.circ_roi_radius_SB.value()
+            # self.circ_roi[2] = self.circ_roi_radius_SB.value()
+            self.circ_roi['radius'] = self.circ_roi_radius_SB.value()
             # x = int(round(event.x()))
             # y = int(round(event.y()))
             # circ = (x, y, self.circ_roi_radius_SB.value())
             # print circ
             self.create_img_vis(update=True)
+        elif self.threshold_BTN.isChecked():
+            self.threshold_SB.setValue(self.threshold_SB.value() + x)
         elif self.marking:
             self.linewidth_SB.setValue(self.linewidth_SB.value() + x)
         else:  # not self.marking:
@@ -191,27 +227,66 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             # self.canvas_GV.setImage(self.qimage)
 
     def circ_roi_left_click(self, x, y):
-        # self.circ_roi = (x, y, self.radius_SB.value())
-        # self.
-        x = int(round(x))
-        y = int(round(y))
-        self.canvas_GV.setMouseTracking(False)
+        # x = int(round(x))
+        # y = int(round(y))
+        # self.canvas_GV.setMouseTracking(False)
         self.circle_ROI_BTN.setChecked(False)
+
+        #update roi
         circ = cv2.circle(np.zeros(self.data.image[self.actual_idx, ...].shape, dtype=np.uint8),
-                          (x, y), self.circ_roi_radius_SB.value(), 1, -1)
-        self.data.roi *= circ
+                          self.circ_roi['center'], self.circ_roi['radius'], 1, -1)
+        # self.data.roi *= circ
+        self.data.circ_roi[self.actual_idx, ...] = circ
+        self.data.update_roi()
+
         self.define_circle_roi()
         self.disp_roi_BTN.setChecked(True)
-        self.disp_roi_clicked()
-        self.circ_roi = [x, y, self.circ_roi_radius_SB.value()]
-        self.create_img_vis()
+        if not self.disp_roi_BTN.isChecked():
+            self.disp_roi_clicked()
+        # self.circ_roi = [x, y, self.circ_roi_radius_SB.value()]
+        # self.circ_roi.center = (x, y)
+        self.create_img_vis(update=True)
 
     def circ_roi_mouse_move(self, x, y):
         x = int(round(x))
         y = int(round(y))
         # print 'moved to {}'.format((x, y))
-        self.circ_roi = [x, y, self.circ_roi_radius_SB.value()]
+        # self.circ_roi = [x, y, self.circ_roi_radius_SB.value()]
+        self.circ_roi['center'] = (x, y)
         # self.create_img_vis(circ=(x, y, self.circ_roi_radius_SB.value()), update=True)
+        self.create_img_vis(update=True)
+
+    def rect_roi_left_click(self, x ,y):
+        x = int(round(x))
+        y = int(round(y))
+        self.rect_roi_pts_clicked += 1
+        # if self.rect_roi['pt1'] is None:
+        if self.rect_roi_pts_clicked == 1:
+            self.rect_roi['pt1'] = (x, y)
+            self.canvas_GV.mouseMoved.connect(self.rect_roi_mouse_move)
+        # elif self.rect_roi['pt2'] is None:
+        else:
+            self.rect_roi_pts_clicked += 1
+            self.rect_roi['pt2'] = (x, y)
+            self.rectangle_ROI_BTN.setChecked(False)
+
+            # update roi
+            rect = cv2.rectangle(np.zeros(self.data.image[self.actual_idx, ...].shape, dtype=np.uint8),
+                                 self.rect_roi['pt1'], self.rect_roi['pt2'], 1, -1)
+            # self.data.roi *= rect
+            self.data.rect_roi[self.actual_idx, ...] = rect
+            self.data.update_roi()
+
+            self.define_rect_roi()
+            self.disp_roi_BTN.setChecked(True)
+            if not self.disp_roi_BTN.isChecked():
+                self.disp_roi_clicked()
+            self.create_img_vis(update=True)
+
+    def rect_roi_mouse_move(self, x, y):
+        x = int(round(x))
+        y = int(round(y))
+        self.rect_roi['pt2'] = (x, y)
         self.create_img_vis(update=True)
 
     def set_marking(self, value):
@@ -284,6 +359,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         if self.disp_roi_BTN.isChecked():
             roi = self.image_vis.copy()
             roi[np.nonzero(self.data.roi[self.actual_idx, ...])] = ROI_COLOR
+            # roi[np.nonzero(self.data.thresh_roi[self.actual_idx, ...])] = ROI_COLOR
             self.image_vis = cv2.addWeighted(roi, ROI_ALPHA, self.image_vis, 1 - ROI_ALPHA, 0)
 
         if self.disp_seeds:
@@ -300,7 +376,12 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         # if circ is not None:
         #     cv2.circle(self.image_vis, circ[:2], circ[2], CIRC_ROI_COLOR, 1)
         if self.circle_ROI_BTN.isChecked():
-            cv2.circle(self.image_vis, tuple(self.circ_roi[:2]), self.circ_roi[2], CIRC_ROI_COLOR, 1)
+            cv2.circle(self.image_vis, self.circ_roi['center'], self.circ_roi['radius'], MARKING_ROI_COLOR, 1)
+
+        if self.rectangle_ROI_BTN.isChecked():
+            cv2.rectangle(self.image_vis, self.rect_roi['pt1'], self.rect_roi['pt2'], MARKING_ROI_COLOR, 1)
+
+        # converting image to QImage
         self.qimage = QtGui.QImage(self.image_vis.data, self.image_vis.shape[1], self.image_vis.shape[0], QtGui.QImage.Format_RGB888)
 
         if update:

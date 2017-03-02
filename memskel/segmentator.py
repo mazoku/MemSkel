@@ -7,6 +7,7 @@ __author__ = 'Ryba'
 
 import numpy as np
 import skimage.morphology as skimor
+import skimage.exposure as skiexp
 import matplotlib.pyplot as plt
 from constants import *
 import cv2
@@ -32,6 +33,37 @@ class Segmentator:
     def ball_radius(self, x):
         self.__ball_radius = x
         self.define_ball_mask()
+
+    def get_threshold(self, img, pt=70, t=None):
+        '''
+        Thresholding - default method is percentile.
+        @param pt: percentile threshold, default is 70%
+        @type pt: int
+        @param t: threshold value, default is None. If it is not None, then this value is used prior to the
+        percentile thresholding.
+        @type t: float
+        @return: thresholded image
+        @rtype: ndarray, dtype=bool
+        '''
+
+        if img is not None:
+            if t is None:
+                # percent thresh
+                hist, bins = skiexp.histogram(img, nbins=100)
+                hist = hist / hist.sum()
+                # hist = hist.astype(np.float) / hist.sum()
+                cum_hist = hist.copy()
+                for i in range(1, len(cum_hist)):
+                    cum_hist[i] += cum_hist[i - 1]
+
+                # diff = cum_hist - (pt / 100)
+                # diff *= diff > 0
+                #
+                # t_ind = np.nonzero(diff)[0][0]
+                t_ind = np.where(cum_hist > pt / 100.)[0][0]
+                t = bins[t_ind]
+            # mask = img > t
+            return t
 
     def define_ball_mask(self):
         self.ball_mask = np.zeros((2 * self.ball_radius + 1, 2 * self.ball_radius + 1, 2), dtype=np.int)

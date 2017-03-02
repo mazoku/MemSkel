@@ -11,11 +11,44 @@ class ImageData:
         self.image = None  # image data to be segmented (usually TIFF format)
         self.segmentation = None  # membrane mask - outcome of segmentation
         self.seeds = None  # seed points defined by user (maybe also automatically?) used for segmentation
+        self.thresh_roi = None  # region of interest; reduce the area where the segmentation is done
+        self.circ_roi = None  # region of interest; reduce the area where the segmentation is done
+        self.rect_roi = None  # region of interest; reduce the area where the segmentation is done
         self.roi = None  # region of interest; reduce the area where the segmentation is done
         self.spline = None  # approximation of the membrane mask; medial axis
         self.n_rows = None
         self.n_cols = None
         self.n_slices = None
+
+    # @property
+    # def thresh_roi(self):
+    #     return self.__thresh_roi
+    #
+    # @thresh_roi.setter
+    # def thresh_roi(self, x):
+    #     self.__thresh_roi = x
+    #     self.roi = self.thresh_roi * self.circ_roi * self.rect_roi
+    #
+    # @property
+    # def circ_roi(self):
+    #     return self.__circ_roi
+    #
+    # @circ_roi.setter
+    # def circ_roi(self, x):
+    #     self.__circ_roi = x
+    #     self.roi = self.thresh_roi * self.circ_roi * self.rect_roi
+    #
+    # @property
+    # def rect_roi(self):
+    #     return self.__rect_roi
+    #
+    # @rect_roi.setter
+    # def rect_roi(self, x):
+    #     self.__rect_roi = x
+    #     self.roi = self.thresh_roi * self.circ_roi * self.rect_roi
+
+    def update_roi(self):
+        self.roi = self.thresh_roi * self.circ_roi * self.rect_roi
 
     def load(self, fname):
         # self.data = self.pilImg2npArray(Image.open(path))
@@ -24,6 +57,9 @@ class ImageData:
         # self.data = cv2.imreadmulti(fname)
         self.segmentation = np.zeros(self.image.shape, dtype=np.uint8)
         self.seeds = np.zeros(self.image.shape, dtype=np.uint8)
+        self.thresh_roi = np.ones(self.image.shape, dtype=np.uint8)
+        self.circ_roi = np.ones(self.image.shape, dtype=np.uint8)
+        self.rect_roi = np.ones(self.image.shape, dtype=np.uint8)
         self.roi = np.ones(self.image.shape, dtype=np.uint8)
         self.n_slices, self.n_rows, self.n_cols = self.image.shape
 
