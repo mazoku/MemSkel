@@ -42,6 +42,7 @@ __author__ = 'Ryba'
 # import logging
 
 import sys
+import time
 # from PyQt4.QtGui import QMainWindow, QApplication, QImage, QPixmap, QFileDialog, QPainter, QPen
 # from PyQt4.QtCore import Qt, QSize
 from PyQt4 import QtCore, QtGui
@@ -122,6 +123,11 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     #     self.canvas_size = self.canvas_L.size()
     #     self.center()
 
+    def update_segmentation(self, mask):
+        self.data.segmentation[self.actual_idx, ...] = mask
+        self.create_img_vis(update=True)
+        self.canvas_GV.repaint()
+
     def threshold_clicked(self):
         if self.threshold_BTN.isChecked():
             self.disp_roi_BTN.setChecked(True)
@@ -171,8 +177,10 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
 
     def segment_img(self, twoD=True):
         self.statusbar.showMessage('Segmenting img')
-        self.segmentator.max_iterations = 20
-        self.segmentator.segment(self.actual_idx, progress_fig=False)
+        self.disp_membrane_BTN.setChecked(True)
+        self.disp_membrane = True
+        # self.segmentator.max_iterations = 100
+        self.segmentator.segment(self.actual_idx, update_fcn=self.update_segmentation, progress_fig=False)
         self.statusbar.showMessage('Segmentation done')
 
     def center(self):

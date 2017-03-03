@@ -70,7 +70,7 @@ class Segmentator:
         self.ball_mask[:, :, 1] = np.tile(np.arange(- self.ball_radius, self.ball_radius + 1), [2 * self.ball_radius + 1, 1])
         self.ball_mask[:, :, 0] = self.ball_mask[:, :, 1].conj().transpose()
 
-    def segment(self, slice_idx, update_rate=10, progress_fig=False):
+    def segment(self, slice_idx, update_fcn=None, update_rate=5, progress_fig=False):
         '''
         Run the segmentation process until convergence or max. number of iterations is achieved
         :param slice_idx: index of current slice
@@ -106,6 +106,9 @@ class Segmentator:
             if not accepted.any():
                 changed = False
                 segmentation = skimor.binary_closing(segmentation, selem=np.ones((5, 5), dtype=np.int))
+
+            if it % update_rate == 0:
+                update_fcn(segmentation)
 
         if progress_fig:
             cv2.waitKey(0)
