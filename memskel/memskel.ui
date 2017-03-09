@@ -614,6 +614,9 @@
             <property name="text">
              <string>Eraser</string>
             </property>
+            <property name="checkable">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item>
@@ -657,7 +660,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QSpinBox" name="smoothing_fac_SB_2">
+              <widget class="QSpinBox" name="eraser_roi_radius_SB">
                <property name="maximumSize">
                 <size>
                  <width>50</width>
@@ -671,7 +674,7 @@
                 <number>50</number>
                </property>
                <property name="value">
-                <number>1</number>
+                <number>10</number>
                </property>
               </widget>
              </item>

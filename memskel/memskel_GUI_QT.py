@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'memskel.ui'
+# Form implementation generated from reading ui file 'memskel/memskel.ui'
 #
 # Created by: PyQt4 UI code generator 4.11.4
 #
@@ -274,6 +274,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_7.setObjectName(_fromUtf8("verticalLayout_7"))
         self.eraser_BTN = QtGui.QPushButton(self.eraser_GB)
         self.eraser_BTN.setMinimumSize(QtCore.QSize(0, 30))
+        self.eraser_BTN.setCheckable(True)
         self.eraser_BTN.setObjectName(_fromUtf8("eraser_BTN"))
         self.verticalLayout_7.addWidget(self.eraser_BTN)
         self.frame_2 = QtGui.QFrame(self.eraser_GB)
@@ -298,13 +299,13 @@ class Ui_MainWindow(object):
         self.label_2.setMaximumSize(QtCore.QSize(16777215, 30))
         self.label_2.setObjectName(_fromUtf8("label_2"))
         self.horizontalLayout_4.addWidget(self.label_2)
-        self.smoothing_fac_SB_2 = QtGui.QSpinBox(self.frame_2)
-        self.smoothing_fac_SB_2.setMaximumSize(QtCore.QSize(50, 16777215))
-        self.smoothing_fac_SB_2.setMinimum(1)
-        self.smoothing_fac_SB_2.setMaximum(50)
-        self.smoothing_fac_SB_2.setProperty("value", 1)
-        self.smoothing_fac_SB_2.setObjectName(_fromUtf8("smoothing_fac_SB_2"))
-        self.horizontalLayout_4.addWidget(self.smoothing_fac_SB_2)
+        self.eraser_roi_radius_SB = QtGui.QSpinBox(self.frame_2)
+        self.eraser_roi_radius_SB.setMaximumSize(QtCore.QSize(50, 16777215))
+        self.eraser_roi_radius_SB.setMinimum(1)
+        self.eraser_roi_radius_SB.setMaximum(50)
+        self.eraser_roi_radius_SB.setProperty("value", 10)
+        self.eraser_roi_radius_SB.setObjectName(_fromUtf8("eraser_roi_radius_SB"))
+        self.horizontalLayout_4.addWidget(self.eraser_roi_radius_SB)
         self.verticalLayout_7.addWidget(self.frame_2)
         self.verticalLayout_2.addWidget(self.eraser_GB)
         spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)

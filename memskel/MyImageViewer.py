@@ -34,7 +34,7 @@ class ImageViewerQt(QGraphicsView):
     # Mouse button signals emit image scene (x, y) coordinates.
     # !!! For image (row, column) matrix indexing, row = y and column = x.
     leftMouseButtonPressed = pyqtSignal(float, float)
-    mouseMoved = pyqtSignal(float, float)
+    mouseMoved = pyqtSignal(float, float, Qt.MouseButton)
     # rightMouseButtonPressed = pyqtSignal(float, float)
     # leftMouseButtonReleased = pyqtSignal(float, float)
     # rightMouseButtonReleased = pyqtSignal(float, float)
@@ -159,7 +159,7 @@ class ImageViewerQt(QGraphicsView):
     def mouseMoveEvent(self, event):
         # if event.buttons() & Qt.LeftButton:# and self.marking:
         scenePos = self.mapToScene(event.pos())
-        self.mouseMoved.emit(scenePos.x(), scenePos.y())
+        self.mouseMoved.emit(scenePos.x(), scenePos.y(), event.buttons())
 
     def mouseReleaseEvent(self, event):
         """ Stop mouse pan or zoom mode (apply zoom if valid).

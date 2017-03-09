@@ -12,4 +12,5 @@ ROI_COLOR = [0, 255, 0]
 ROI_ALPHA = 0.4
 MARKING_ROI_COLOR = [255, 0, 0]
 
+ERASER_COLOR = [255, 0, 0]
 # Circ_roi = namedtuple('CircRoi', 'center radius')  # circular roi
