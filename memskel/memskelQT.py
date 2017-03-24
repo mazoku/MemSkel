@@ -1,11 +1,6 @@
 from __future__ import division
 __author__ = 'Ryba'
 
-# TODO -----------------------------
-#   - ukoncovat nastroje pomoci ESC
-#   - vizualizace ROIe
-#   - zpravy do statusbaru
-# TODO -----------------------------
 # # py2exe and libtiff stuff
 # import sys
 # # sys.path += ['.']
