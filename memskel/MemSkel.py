@@ -258,9 +258,9 @@ class MemSkel:
 
     def skelBtnCallback(self):
         curr = self.sketch.currFrameIdx
-        for slc in range( self.numframes ):
+        for slc in range(self.numframes):
             self.sketch.currFrameIdx = slc
-            self.skel[slc,:,:] = self.getSkel()
+            self.skel[slc ,:, :] = self.getSkel()
         self.sketch.currFrameIdx = curr
         self.sketch.redrawFig()
 
@@ -277,7 +277,7 @@ class MemSkel:
         if self.filename:
             self.loadImage()
         else:
-            self.statusbar.config( text='File not loaded' )
+            self.statusbar.config(text='File not loaded')
         # print self.filename
 
     def segmentStackBtnCallback(self):

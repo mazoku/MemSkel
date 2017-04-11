@@ -48,10 +48,13 @@ from collections import namedtuple
 import numpy as np
 import skimage.io as skiio
 import cv2
+from scipy import interpolate
 
 from imagedata import ImageData
 from MyImageViewer import ImageViewerQt
 from segmentator import Segmentator
+import skimage.morphology as skimor
+import pymorph as pm
 
 # ----
 from constants import *
@@ -85,6 +88,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.rect_roi_pts_clicked = 0
         self.disp_membrane = self.disp_membrane_BTN.isChecked()
         self.disp_seeds = self.disp_seeds_BTN.isChecked()
+        self.disp_skelet = self.disp_skelet_BTN.isChecked()
+        self.disp_approx = self.disp_approximation_BTN.isChecked()
         # self.x
 
         # OVERRIDING ----
@@ -101,6 +106,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.disp_membrane_BTN.clicked.connect(self.disp_membrane_clicked)
         self.disp_seeds_BTN.clicked.connect(self.disp_seeds_clicked)
         self.disp_roi_BTN.clicked.connect(self.disp_roi_clicked)
+        self.disp_skelet_BTN.clicked.connect(self.disp_skelet_clicked)
+        self.disp_approximation_BTN.clicked.connect(self.disp_approximation_clicked)
 
         self.circle_ROI_BTN.clicked.connect(self.define_circle_roi)
         self.circ_roi_radius_SB.valueChanged.connect(self.circ_radius_SB_changed)
@@ -111,6 +118,9 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
 
         self.eraser_BTN.clicked.connect(self.eraser_clicked)
         self.eraser_roi_radius_SB.valueChanged.connect(self.eraser_radius_SB_changed)
+
+        self.skeleton_BTN.clicked.connect(self.skeletonize_clicked)
+        self.approximation_BTN.clicked.connect(self.approximation_clicked)
 
         # display default image
         logo_fname = 'data/icons/kky.png'
@@ -126,6 +136,109 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     #     # self.set_img_vis(self.data.data[self.actual_idx, ...])
     #     self.canvas_size = self.canvas_L.size()
     #     self.center()
+
+    def sequential_thinning(self, skel, type='both'):
+        # TODO: is it possible to use skimage.thin to do that? This way we could remove one dependency (pymorph)
+        golayL1Hit = np.array([[0, 0, 0], [0, 1, 0], [1, 1, 1]])
+        golayL1Miss = np.array([[1, 1, 1], [0, 0, 0], [0, 0, 0]])
+        golayL = pm.se2hmt(golayL1Hit, golayL1Miss)
+
+        golayE1Hit = np.array([[0, 1, 0], [0, 1, 0], [0, 0, 0]])
+        golayE1Miss = np.array([[0, 0, 0], [1, 0, 1], [1, 1, 1]])
+        golayE = pm.se2hmt(golayE1Hit, golayE1Miss)
+
+        if type in ['golayL', 'both']:
+            skel = pm.thin(skel, Iab=golayL, n=-1, theta=45, direction='clockwise')
+        if type in ['golayE', 'both']:
+            skel = pm.thin(skel, Iab=golayE, n=-1, theta=45, direction='clockwise')
+        else:
+            raise AttributeError('Wrong type specified, valid types are: golayL, golayE, both')
+
+        # changed = True
+        # while changed:
+        #    skelT = pm.thin(skel, Iab = golayE, n = 1, theta = 45, direction = "clockwise")
+        #    plt.figure()
+        #    plt.subplot(121), plt.imshow( skel ), plt.gray()
+        #    plt.subplot(122), plt.imshow( skelT ), plt.gray()
+        #    plt.show()
+        #
+        #    if (skel == skelT).all() :
+        #        changed = False
+        #    skel = skelT
+
+        return skel
+
+    def skeletonize_clicked(self):
+        data = self.data.segmentation[self.actual_idx, ...]
+        skel = skimor.medial_axis(data)
+        # processing skelet - removing not-closed parts
+        self.data.skelet[self.actual_idx, :, :] = self.sequential_thinning(skel, type='golayE')
+        self.create_img_vis(update=True)
+
+    def spline_approximation(self):
+        pass
+
+    def skel2path(self, skel, startPt=[]):
+        nPoints = len(np.nonzero(skel)[0])
+        path = np.zeros((nPoints, 2))
+
+        if not startPt:
+            startPt = np.argwhere(skel)[0, :]
+        skel[startPt[0], startPt[1]] = 0
+        path[0, :] = startPt
+
+        nghbsI = np.array(([-1, 0], [0, -1], [0, 1], [1, 0], [-1, -1], [-1, 1], [1, -1], [1, 1]))
+
+        currPt = startPt
+        for i in range(1, nPoints - 1):
+            mask = np.array([nghbsI[:, 0] + currPt[0], nghbsI[:, 1] + currPt[1]]).conj().transpose()
+            nghbs = skel[mask[:, 0], mask[:, 1]]
+            firstI = np.argwhere(nghbs)[0]  # get index of first founded neighbor
+            currPt = np.squeeze(mask[firstI, :])  # get that neighbor
+            path[i, :] = currPt
+            skel[currPt[0], currPt[1]] = 0
+
+        path[-1, :] = np.argwhere(skel)  # should be the last remaining pixel
+
+        return path
+
+    def approximation_clicked(self):
+        pathsL = []
+        # spline = []
+        # approx = []
+        # skel = self.data.skelet[self.actual_idx, ...]
+        # for i in range(self.numframes):
+        #     approx.append(np.zeros((1, 2), dtype=np.int))
+        #     spline.append(np.zeros((1, 2), dtype=np.int))
+
+        nProcessedFrames = np.amax(np.amax(self.data.skelet, axis=1), axis=1).sum()
+        m = self.data.skelet.sum() / nProcessedFrames  # average number of points in skelet
+        maxsf = m + np.sqrt(2 * m)  # maximal recommended smoothing factor according to scipy documentation
+        sfLevel = int(self.smoothing_fac_SB.value())
+        nLevels = 10  # number of smoothing levels
+        sf = int(sfLevel * ((2 * maxsf) / nLevels))
+
+        for i in range(self.data.n_slices):
+            if not self.data.skelet[i, :, :].any():
+                self.data.spline[i] = None
+                self.data.approx_skel[i] = None
+                continue
+            path = self.skel2path(self.data.skelet[i, :, :].copy())
+            pathsL.append(path)
+            x = []
+            y = []
+            for point in path:
+                x.append(point[0])
+                y.append(point[1])
+
+            # tck, u, fp, ier, msg = interpolate.splprep((x, y), s=sf, full_output=1, per=1)
+            (tck, u), fp, ier, msg = interpolate.splprep((x, y), s=sf, full_output=1, per=1)
+            # x = interpolate.splprep((x, y), s=sf, full_output=1, per=1)
+            # u = tcku[1]
+
+            self.data.spline[i] = (tck, u)
+            self.data.approx_skel[i] = np.array(interpolate.splev(x=u, tck=tck))
+            pass
 
     def eraser_clicked(self):
         if self.eraser_BTN.isChecked():
@@ -181,6 +294,14 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.create_img_vis(update=True)
 
     def disp_roi_clicked(self):
+        self.create_img_vis(update=True)
+
+    def disp_skelet_clicked(self):
+        self.disp_skelet = self.disp_skelet_BTN.isChecked()
+        self.create_img_vis(update=True)
+
+    def disp_approximation_clicked(self):
+        self.disp_approx = self.disp_approximation_BTN.isChecked()
         self.create_img_vis(update=True)
 
     def circ_radius_SB_changed(self, x):
@@ -399,6 +520,17 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             memb[np.nonzero(self.data.segmentation[self.actual_idx, ...])] = MEMBRANE_COLOR
             self.image_vis = cv2.addWeighted(memb, MEMBRANE_ALPHA, self.image_vis, 1 - MEMBRANE_ALPHA, 0)
         # self.image_vis[np.nonzero(self.data.seeds[self.actual_idx, ...])] = [255, 0, 0]
+
+        if self.disp_skelet:
+            self.image_vis[np.nonzero(self.data.skelet[self.actual_idx, ...])] = SKEL_COLOR
+
+        if self.disp_approx:
+            # self.image_vis[np.nonzero(self.data.skelet[self.actual_idx, ...])] = APPROX_COLOR
+            # cv2.polylines(self.image_vis, self.data.approx_skel[self.actual_idx], True, APPROX_COLOR,
+            #               thickness=1, lineType=cv2.LINE_AA)
+            pts = self.data.approx_skel[self.actual_idx].astype(np.int32)
+            for i in range(pts.shape[1] - 1):
+                cv2.line(self.image_vis, tuple(pts[:, i]), tuple(pts[:, i + 1]), (255, 0, 0), thickness=1, lineType=cv2.LINE_AA)
 
         # if circ is not None:
         #     cv2.circle(self.image_vis, circ[:2], circ[2], CIRC_ROI_COLOR, 1)

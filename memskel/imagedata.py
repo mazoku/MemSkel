@@ -15,7 +15,9 @@ class ImageData:
         self.circ_roi = None  # region of interest; reduce the area where the segmentation is done
         self.rect_roi = None  # region of interest; reduce the area where the segmentation is done
         self.roi = None  # region of interest; reduce the area where the segmentation is done
+        self.skelet = None
         self.spline = None  # approximation of the membrane mask; medial axis
+        self.approx_skel = None
         self.n_rows = None
         self.n_cols = None
         self.n_slices = None
@@ -61,7 +63,11 @@ class ImageData:
         self.circ_roi = np.ones(self.image.shape, dtype=np.uint8)
         self.rect_roi = np.ones(self.image.shape, dtype=np.uint8)
         self.roi = np.ones(self.image.shape, dtype=np.uint8)
+        self.skelet = np.zeros(self.image.shape, dtype=np.uint8)
+        # self.approx_skel = np.zeros((1, 2), dtype=np.int)
         self.n_slices, self.n_rows, self.n_cols = self.image.shape
+        self.approx_skel = [None, ] * self.n_slices
+        self.spline = [None, ] * self.n_slices
 
     def pilImg2npArray(self, im):
         page = 0
