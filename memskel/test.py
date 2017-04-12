@@ -8,7 +8,7 @@ image = cv2.imread('data/icons/kky.png')
 
 # loop over the alpha transparency values
 # for alpha in np.arange(0, 1.1, 0.1)[::-1]:
-alpha = 1
+alpha = 0.5
 # create two copies of the original image -- one for
 # the overlay and one for the final output image
 overlay = image.copy()

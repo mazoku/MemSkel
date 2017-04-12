@@ -122,6 +122,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.skeleton_BTN.clicked.connect(self.skeletonize_clicked)
         self.approximation_BTN.clicked.connect(self.approximation_clicked)
 
+        self.smoothing_fac_SB.valueChanged.connect(self.smoothing_fac_changed)
+
         # display default image
         logo_fname = 'data/icons/kky.png'
         # self.image = cv2.cvtColor(cv2.imread(logo_fname), cv2.COLOR_BGR2RGB)
@@ -136,6 +138,9 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     #     # self.set_img_vis(self.data.data[self.actual_idx, ...])
     #     self.canvas_size = self.canvas_L.size()
     #     self.center()
+
+    def smoothing_fac_changed(self, value):
+        self.approximation_clicked()
 
     def sequential_thinning(self, skel, type='both'):
         # TODO: is it possible to use skimage.thin to do that? This way we could remove one dependency (pymorph)
@@ -228,8 +233,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             x = []
             y = []
             for point in path:
-                x.append(point[0])
-                y.append(point[1])
+                x.append(point[1])
+                y.append(point[0])
 
             # tck, u, fp, ier, msg = interpolate.splprep((x, y), s=sf, full_output=1, per=1)
             (tck, u), fp, ier, msg = interpolate.splprep((x, y), s=sf, full_output=1, per=1)
@@ -238,7 +243,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
 
             self.data.spline[i] = (tck, u)
             self.data.approx_skel[i] = np.array(interpolate.splev(x=u, tck=tck))
-            pass
+
+            self.create_img_vis(update=True)
 
     def eraser_clicked(self):
         if self.eraser_BTN.isChecked():
@@ -301,6 +307,13 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.create_img_vis(update=True)
 
     def disp_approximation_clicked(self):
+        # skel = np.load('data/skelet.npy')
+        # tck = np.load('data/tck.npy')
+        # u = np.load('data/u.npy')
+        # self.data.skelet[self.actual_idx, ...] = skel
+        # self.data.spline[self.actual_idx] = (tck, u)
+        # self.data.approx_skel[self.actual_idx] = np.array(interpolate.splev(x=u, tck=tck))
+
         self.disp_approx = self.disp_approximation_BTN.isChecked()
         self.create_img_vis(update=True)
 
