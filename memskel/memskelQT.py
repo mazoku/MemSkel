@@ -476,8 +476,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             self.seed_lbl = BGD_SEED_LBL
             # self.marking = True
             self.set_marking(True)
-            self.canvas_GV.leftMouseButtonPressed.connect(self.handleLeftClick)
-            self.canvas_GV.mouseMoved.connect(self.handleMouseMove)
+            self.canvas_GV.leftMouseButtonPressed.connect(self.marking_left_click)
+            self.canvas_GV.mouseMoved.connect(self.marking_mouse_move)
 
         if not btn.isChecked():
             # self.marking = False
