@@ -9,7 +9,7 @@ __author__ = 'Ryba'
 #
 # import Tkinter as tk
 # # import ttk
-# import os
+import os
 # import tkFileDialog
 # import numpy as np
 #
@@ -32,7 +32,7 @@ __author__ = 'Ryba'
 #
 # import MySketcher
 # import memskel_tools as mt
-# from libtiff import TIFFimage #, TIFF
+from libtiff import TIFFimage #, TIFF
 # import ProgressMeter as pmeter
 #
 # import logging
@@ -98,6 +98,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
 
         # SIGNALS ----
         self.open_BTN.clicked.connect(self.load_data)
+        self.save_BTN.clicked.connect(self.save_data)
         self.slice_SB.valueChanged.connect(self.slice_SB_changed)
         self.mark_obj_BTN.clicked.connect(lambda: self.mark_seeds('o'))
         self.mark_bgd_BTN.clicked.connect(lambda: self.mark_seeds('b'))
@@ -178,6 +179,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         skel = skimor.medial_axis(data)
         # processing skelet - removing not-closed parts
         self.data.skelet[self.actual_idx, :, :] = self.sequential_thinning(skel, type='golayE')
+        self.disp_skelet_BTN.setChecked(True)
+        self.disp_skelet_clicked()
         self.create_img_vis(update=True)
 
     def spline_approximation(self):
@@ -244,6 +247,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             self.data.spline[i] = (tck, u)
             self.data.approx_skel[i] = np.array(interpolate.splev(x=u, tck=tck))
 
+            self.disp_approximation_BTN.setChecked(True)
+            self.disp_approximation_clicked()
             self.create_img_vis(update=True)
 
     def eraser_clicked(self):
@@ -357,6 +362,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.disp_membrane = True
         self.segmentator.segment(self.actual_idx, update_fcn=self.update_segmentation, progress_fig=False)
         self.statusbar.showMessage('Segmentation done')
+        self.disp_membrane_BTN.setChecked(True)
 
     def center(self):
         screen = QtGui.QDesktopWidget().screenGeometry()
@@ -509,6 +515,58 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.slice_SB_changed(0)
         self.set_img_vis(self.data.image[self.actual_idx, ...])
 
+    def save_data(self):
+        # self.statusbar.config(text='Save button pressed')
+
+        filename = str(QtGui.QFileDialog.getSaveFileName(self, 'Save membrane', 'data/',
+                                                         "Image files (*.jpg *.gif *.tiff *.tif)"))
+        name, ext = os.path.splitext(filename)
+
+        # writing spline format
+        filename_spl = name + '.shapes'
+        f_spl = open(filename_spl, 'w')
+        f_spl.write('Groups=,\nColors=,\nSupergroups=,\nSupercolors=,\n\n')
+        for slc in range(self.data.n_slices):
+            if self.data.spline[slc] is not None:
+                tck = self.data.spline[slc][0]
+                knots = tck[0]
+                coeffs = tck[1]
+                # incrementing coordinates - matlab is indexing from 1 and not from 0
+                for coords in coeffs:
+                    coords += 1
+                k = tck[2]
+                strK = str(k)
+                strKnots = ','.join(map(str, knots.tolist()))
+                strX = ','.join(map(str, coeffs[0].tolist()))
+                strY = ','.join(map(str, coeffs[1].tolist()))
+
+                f_spl.write('type=spline\n')
+                f_spl.write('name=\n')
+                f_spl.write('group=\n')
+                f_spl.write('color=255\n')
+                f_spl.write('supergroup=null\n')
+                f_spl.write('supercolor=null\n')
+                f_spl.write('in slice=' + str(slc) + '\n')
+                f_spl.write('k=' + strK + '\n')
+                f_spl.write('knots:\n')
+                f_spl.write(strKnots + '\n')
+                f_spl.write('control points:\n')
+                f_spl.write(strX + '\n')
+                f_spl.write(strY + '\n\n')
+
+        f_spl.close()
+
+        # saving membrane image
+        # for slc in range(self.data.n_slices):
+            # self.sketch.mask[slc, :, :] = pm.close(self.sketch.mask[slc, :, :], np.ones((3,3), dtype=np.bool))
+            # self.data.segmentation[slc, :, :] = skimor.binary_closing(self.sketch.mask[slc, :, :],
+            #                                                     selem=np.ones((3, 3), dtype=np.bool))
+        filename_mem = name + '.tif'
+        saveim = np.where(self.data.segmentation, 255, 0)
+        tiff = TIFFimage(saveim.astype(np.uint8), description='')
+        tiff.write_file(filename_mem, compression='none')
+        del tiff
+
     def create_img_vis(self, img=None, update=True, circ=None):
         if img is None:
             self.image_vis = cv2.cvtColor(self.data.image[self.actual_idx, ...], cv2.COLOR_GRAY2RGB)
@@ -541,9 +599,10 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             # self.image_vis[np.nonzero(self.data.skelet[self.actual_idx, ...])] = APPROX_COLOR
             # cv2.polylines(self.image_vis, self.data.approx_skel[self.actual_idx], True, APPROX_COLOR,
             #               thickness=1, lineType=cv2.LINE_AA)
-            pts = self.data.approx_skel[self.actual_idx].astype(np.int32)
-            for i in range(pts.shape[1] - 1):
-                cv2.line(self.image_vis, tuple(pts[:, i]), tuple(pts[:, i + 1]), (255, 0, 0), thickness=1, lineType=cv2.LINE_AA)
+            if self.data.approx_skel[self.actual_idx] is not None:
+                pts = self.data.approx_skel[self.actual_idx].astype(np.int32)
+                for i in range(pts.shape[1] - 1):
+                    cv2.line(self.image_vis, tuple(pts[:, i]), tuple(pts[:, i + 1]), APPROX_COLOR, thickness=1, lineType=cv2.LINE_AA)
 
         # if circ is not None:
         #     cv2.circle(self.image_vis, circ[:2], circ[2], CIRC_ROI_COLOR, 1)
@@ -577,6 +636,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
     memskel = MainWindow()
-    memskel.load_data(fname='data/smallStack.tif')
+    fname = 'data/smallStack.tif'
+    memskel.load_data(fname=fname)
     memskel.show()
     app.exec_()

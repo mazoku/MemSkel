@@ -80,8 +80,8 @@ class Segmentator:
         '''
         it = 0
         changed = True
-        segmentation = self.data.seeds[slice_idx, ...].copy()
-        newbies = self.data.seeds[slice_idx, ...].copy()
+        segmentation = self.data.seeds[slice_idx, ...] * self.data.roi[slice_idx, ...]
+        newbies = segmentation.copy()
         while changed and it < self.max_iterations:
             it += 1
             segmentation_new, accepted, refused, newbies = self.segmentation_step(self.data.image[slice_idx, ...], newbies,

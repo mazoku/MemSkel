@@ -7,7 +7,8 @@ if __name__ == '__main__':
     # except: fn = '../cpp/fruits.jpg'
     # print __doc__
 
-    fname = '/home/tomas/projects/memskel/memskel/data/GAP43-CFP-Gi2_c1.png'
+    # fname = '/home/tomas/projects/memskel/memskel/data/GAP43-CFP-Gi2_c1.png'
+    fname = '/home/tomas/Dropbox/Data/Kana/3Dprasek-1_02-1000x2.png'
 
     img = cv2.imread(fname, True)
     h, w = img.shape[:2]
