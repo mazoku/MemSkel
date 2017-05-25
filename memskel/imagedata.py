@@ -21,6 +21,7 @@ class ImageData:
         self.n_rows = None
         self.n_cols = None
         self.n_slices = None
+        self.processed = False
 
     # @property
     # def thresh_roi(self):
@@ -68,6 +69,7 @@ class ImageData:
         self.n_slices, self.n_rows, self.n_cols = self.image.shape
         self.approx_skel = [None, ] * self.n_slices
         self.spline = [None, ] * self.n_slices
+        self.processed = [False, ] * self.n_slices
 
     def pilImg2npArray(self, im):
         page = 0

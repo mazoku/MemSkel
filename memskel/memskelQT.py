@@ -1,52 +1,15 @@
 from __future__ import division
-__author__ = 'Ryba'
 
-# # py2exe and libtiff stuff
-# import sys
-# # sys.path += ['.']
-# # from ctypes import util
-# #---------------------------
-#
-# import Tkinter as tk
-# # import ttk
 import os
-# import tkFileDialog
-# import numpy as np
-#
-# # import matplotlib.pyplot as plt
-# # import pymorph as pm
-#
-# # from pylab import *
-# import matplotlib.pyplot as plt
-# from pylab import Circle, Axes, figaspect
-#
-# from PIL import Image, ImageTk #, PngImagePlugin, TiffImagePlugin
-# # Image._initialized = 2  # otherwise PIL cannot identify image file after py2exe debuging
-# from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-#
-# # from scipy.sparse.csgraph import _validation #otherwise could not be compiled by py2exe
-# from scipy import interpolate
-#
-# import skimage.exposure as skiexp
-# import skimage.morphology as skimor
-#
-# import MySketcher
-# import memskel_tools as mt
-from libtiff import TIFFimage #, TIFF
+from libtiff import TIFFimage
 # import ProgressMeter as pmeter
-#
 # import logging
 
 import sys
-import time
-# from PyQt4.QtGui import QMainWindow, QApplication, QImage, QPixmap, QFileDialog, QPainter, QPen
-# from PyQt4.QtCore import Qt, QSize
 from PyQt4 import QtCore, QtGui
 from memskel_GUI_QT import Ui_MainWindow
 
-from collections import namedtuple
 import numpy as np
-import skimage.io as skiio
 import cv2
 from scipy import interpolate
 
@@ -56,12 +19,7 @@ from segmentator import Segmentator
 import skimage.morphology as skimor
 import pymorph as pm
 
-# ----
 from constants import *
-# OBJ_COLOR = [255, 0, 0]  # QtCore.Qt.red
-# BGD_COLOR = [0, 0, 255]  # QtCore.Qt.blue
-# OBJ_SEED_LBL = 1
-# BGD_SEED_LBL = 2
 
 
 class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
@@ -102,7 +60,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.slice_SB.valueChanged.connect(self.slice_SB_changed)
         self.mark_obj_BTN.clicked.connect(lambda: self.mark_seeds('o'))
         self.mark_bgd_BTN.clicked.connect(lambda: self.mark_seeds('b'))
-        self.segment_img_BTN.clicked.connect(lambda: self.segment_img(twoD=True))
+        self.segment_img_BTN.clicked.connect(self.segment_img)
+        self.process_stack_BTN.clicked.connect(self.process_stack)
 
         self.disp_membrane_BTN.clicked.connect(self.disp_membrane_clicked)
         self.disp_seeds_BTN.clicked.connect(self.disp_seeds_clicked)
@@ -356,13 +315,25 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.disp_seeds = self.disp_seeds_BTN.isChecked()
         self.create_img_vis(update=True)
 
-    def segment_img(self, twoD=True):
-        self.statusbar.showMessage('Segmenting img')
+    def segment_img(self):
+        self.statusbar.showMessage('Segmenting img ...')
         self.disp_membrane_BTN.setChecked(True)
         self.disp_membrane = True
         self.segmentator.segment(self.actual_idx, update_fcn=self.update_segmentation, progress_fig=False)
         self.statusbar.showMessage('Segmentation done')
+        self.process_stack_BTN.setEnabled(True)
+        self.data.processed[self.actual_idx] = True
         self.disp_membrane_BTN.setChecked(True)
+
+    def process_stack(self):
+        # segmentation
+        self.statusbar.showMessage('Segmenting stack ...')
+
+        self.statusbar.showMessage('Segmentation done')
+
+        # skeletonization
+
+        # approximation
 
     def center(self):
         screen = QtGui.QDesktopWidget().screenGeometry()
@@ -495,6 +466,9 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     def slice_SB_changed(self, value):
         self.actual_slice_LBL.setText(str(value + 1))
         self.actual_idx = value
+
+        self.process_stack_BTN.setEnabled(self.data.processed[self.actual_idx])
+
         self.create_img_vis()
         self.canvas_GV.setImage(self.qimage)
         # self.set_img_vis(self.image_vis)

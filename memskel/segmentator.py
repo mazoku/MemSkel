@@ -8,12 +8,11 @@ __author__ = 'Ryba'
 import numpy as np
 import skimage.morphology as skimor
 import skimage.exposure as skiexp
-import matplotlib.pyplot as plt
 from constants import *
 import cv2
 
 
-class Segmentator:
+class Segmentator(object):
 
     def __init__(self):
         self.data = None
@@ -72,7 +71,7 @@ class Segmentator:
 
     def segment(self, slice_idx, update_fcn=None, update_rate=5, progress_fig=False):
         '''
-        Run the segmentation process until convergence or max. number of iterations is achieved
+        Run the segmentation process until convergence or max. number of iterations is achieved.
         :param slice_idx: index of current slice
         :param update_rate: number of iterations until figures update
         :param progress_fig: whether to show independent visualization window
@@ -87,14 +86,7 @@ class Segmentator:
             segmentation_new, accepted, refused, newbies = self.segmentation_step(self.data.image[slice_idx, ...], newbies,
                                                                                   segmentation.copy(), self.data.roi[slice_idx, ...])
             newbies = segmentation_new - segmentation
-            # plt.figure()
-            # plt.imshow(np.hstack((segmentation, segmentation_new, newbies)), 'gray', interpolation='nearest')
-            # plt.title('segmentation progress')
-            # plt.show()
             segmentation = segmentation_new
-            # if display and it % drawStep == 0:
-            #     self.sketch.mask[self.sketch.currFrameIdx, :, :] = mask
-            #     self.sketch.redrawFig()
             if progress_fig:
                 cnts = cv2.findContours(segmentation.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[-2]
                 cnt = sorted(cnts, key=cv2.contourArea)[-1]
@@ -128,11 +120,6 @@ class Segmentator:
         # get new candidates by dilating mask of newbies
         dilated_mask = skimor.binary_dilation(newbies, self.strel)
         candidates = (dilated_mask - newbies) * roi
-        # plt.figure()
-        # plt.subplot(131), plt.imshow(newbies, 'gray')
-        # plt.subplot(132), plt.imshow(dilated_mask, 'gray')
-        # plt.subplot(133), plt.imshow(candidates, 'gray')
-        # plt.show()
         candidates = np.argwhere(candidates)
 
         # lists of filtered candidates
@@ -168,6 +155,20 @@ class Segmentator:
         refused = np.array(refused)
 
         return segmentation, accepted, refused, newbies
+
+    def segment_stack(self, idx):
+        init_membrane = self.data.segmentation[idx, ...]
+        # TODO: brat v potaz membranu nebo seedy?
+
+        # find seeds in other slices
+        for i in range(self.data.n_slices):
+            # skip the initial frame
+            if i == idx:
+                continue
+
+            
+
+        # segment each slice
 
     def mask_newbie(self, newbie, mask):
         """

@@ -779,10 +779,10 @@ class MemSkel:
 
         self.statusbar.config(text='Frame segmetation finished.')
 
-    def segmentX2end( self, startIdx ):
-        self.segmentX2Y( startIdx, self.numframes-1 )
+    def segmentX2end(self, startIdx):
+        self.segmentX2Y(startIdx, self.numframes - 1)
 
-    def segmentX2Y( self, startIdx, endIdx ):
+    def segmentX2Y(self, startIdx, endIdx):
         t = 5 #maximal difference for accepting point as a seed point
         nFrames = endIdx - startIdx + 1 #from 2nd to the 4th makes 3 frames => 3 = 4 - 2 + 1
         # self.progressbar = ttk.Progressbar( self.sbframe, orient=tk.HORIZONTAL, length=200, mode='determinate', maximum=nFrames-1 )
@@ -810,7 +810,7 @@ class MemSkel:
             self.skel[i,:,:] = self.getSkel( show=False )
 
             if not self.skel[i,:,:].any() or self.skel[i,:,:].sum() < 10:
-#                print 'starting over...'
+               # print 'starting over...'
                 self.sketch.setInitMask( self.skel[i-1,:,:] )
                 self.run_segmentation( display=True )
                 self.skel[i,:,:] = self.getSkel( show=False )
