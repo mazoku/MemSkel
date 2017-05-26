@@ -166,7 +166,7 @@ class Segmentator(object):
             if i == idx:
                 continue
 
-            
+
 
         # segment each slice
 
