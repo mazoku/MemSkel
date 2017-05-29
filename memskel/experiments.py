@@ -16,7 +16,7 @@ import skimage.measure as skimea
 
 from itertools import product
 
-import skfuzzy
+# import skfuzzy
 from PIL import Image
 
 

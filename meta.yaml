@@ -35,10 +35,26 @@ requirements:
   build:
     - python
     - setuptools
+    - numpy
+    - scipy
+    - pil
+    - opencv
+    - libtiff
+    - pyqt 4.11.*
+    - scikit-image
+    - pymorph
 
   run:
     - python
-    # - numpy
+    - setuptools
+    - numpy
+    - scipy
+    - pil
+    - opencv
+    - libtiff
+    - pyqt 4.11.*
+    - scikit-image
+    - pymorph
 
 test:
   # Python imports
