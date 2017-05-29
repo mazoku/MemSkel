@@ -10,6 +10,7 @@ import skimage.morphology as skimor
 import skimage.exposure as skiexp
 from constants import *
 import cv2
+import cPickle as pickle
 
 
 class Segmentator(object):
@@ -174,11 +175,10 @@ class Segmentator(object):
     def segment_stack(self, idx):
         init_membrane = self.data.segmentation[idx, ...]
         init_seeds = self.data.seeds[idx, ...]
-        # TODO: brat v potaz membranu nebo seedy?
 
         # create histogram model for backprojection
         # self.calc_model(self.data.image[idx, ...],  init_membrane)
-        self.calc_model(self.data.image[idx, ...],  init_seeds, show=True)
+        self.calc_model(self.data.image[idx, ...],  init_seeds, show=False)
 
         # find seeds in other slices
         for i in range(self.data.n_slices):
@@ -191,7 +191,10 @@ class Segmentator(object):
 
             # pouze seedy
             print 'Propagating seeds ...',
+            bp = cv2.calcBackProject([im], [0,], self.model_hist, [0, 256], 1)
 
+            cv2.imshow('backproj', np.hstack((im, bp)))
+            cv2.waitKey(0)
             print 'done'
 
             # membrana
@@ -259,10 +262,7 @@ class Segmentator(object):
         return dist_in, dist_out
 
 
-if __name__ == '__main__':
-    from imagedata import ImageData
-    import skimage.data as skidat
-    import cv2
+def example_immunohisto():
     img = skidat.immunohistochemistry()
     img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     img = cv2.resize(img, None, fx=0.5, fy=0.5)
@@ -302,7 +302,7 @@ if __name__ == '__main__':
     # cv2.imshow('seeds', np.hstack((img, seeds)))
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
-    #----------------
+    # ----------------
 
     img = np.expand_dims(img, 0)
     # cv2.imshow('img', img)
@@ -319,3 +319,32 @@ if __name__ == '__main__':
     segmentator = Segmentator()
     segmentator.data = data
     segmentator.segment(0, progress_fig=True)
+
+
+def example_membrane():
+    data_pkl = pickle.load(open('data/test_data_3d.pickle', 'rb'))
+    data = ImageData()
+    data.image = data_pkl['im']
+    data.segmentation = data_pkl['segmentation']
+    data.seeds = data_pkl['seeds']
+    data.roi = data_pkl['roi']
+    idx = data_pkl['idx']
+    data.n_slices = data.segmentation.shape[0]
+
+    segmentator = Segmentator()
+    segmentator.data = data
+
+    cv2.imshow('image', np.hstack(tuple([x for x in data.image])))
+    cv2.imshow('membrane', np.hstack(tuple([255 * x for x in data.segmentation])))
+    cv2.imshow('seeds', np.hstack(tuple([255 * x for x in data.seeds])))
+    cv2.waitKey(0)
+
+    segmentator.segment_stack(idx)
+
+
+if __name__ == '__main__':
+    from imagedata import ImageData
+    import skimage.data as skidat
+    import cv2
+
+    example_membrane()

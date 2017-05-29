@@ -18,6 +18,7 @@ from MyImageViewer import ImageViewerQt
 from segmentator import Segmentator
 import skimage.morphology as skimor
 import pymorph as pm
+import cPickle as pickle
 
 from constants import *
 
@@ -328,7 +329,16 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     def process_stack(self):
         # segmentation
         self.statusbar.showMessage('Segmenting stack ...')
-
+        # temp --
+        print 'Writing data to file ...',
+        out = {'im': self.data.image,
+               'seeds': self.data.seeds,
+               'segmentation': self.data.segmentation,
+               'roi': self.data.roi,
+               'idx': self.actual_idx}
+        pickle.dump(out, open('data/test_data_3d.pickle', 'wb'))
+        print 'done'
+        # --
         self.statusbar.showMessage('Segmentation done')
 
         # skeletonization
