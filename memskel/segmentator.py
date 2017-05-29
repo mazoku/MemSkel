@@ -23,6 +23,7 @@ class Segmentator(object):
         self.draw_steps = 5  # number of iterations after which the figures are updated
         self.max_iterations = 1000  # maximal number of iterations
         self.strel = np.ones((3, 3), dtype=np.int)  # structure element of dilatation for getting neighboring points
+        self.model_hist = None  # histogram model for back projection
 
     @property
     def ball_radius(self):
@@ -156,15 +157,45 @@ class Segmentator(object):
 
         return segmentation, accepted, refused, newbies
 
+    def calc_model(self, img, mask, show=False, show_now=True):
+        self.model_hist = cv2.calcHist([img], [0,], mask, [64], [0, 256])
+        cv2.normalize(self.model_hist, self.model_hist, 0, 255, cv2.NORM_MINMAX)
+
+        if show:
+            h = np.zeros((300, 256, 3))
+            hist = np.int32(np.around(self.model_hist))
+            for x, y in enumerate(hist):
+                cv2.line(h, (x, 0), (x, y), (255, 255, 255))
+            y = np.flipud(h)
+            cv2.imshow('hist model', y)
+            if show_now:
+                cv2.waitKey(0)
+
     def segment_stack(self, idx):
         init_membrane = self.data.segmentation[idx, ...]
+        init_seeds = self.data.seeds[idx, ...]
         # TODO: brat v potaz membranu nebo seedy?
+
+        # create histogram model for backprojection
+        # self.calc_model(self.data.image[idx, ...],  init_membrane)
+        self.calc_model(self.data.image[idx, ...],  init_seeds, show=True)
 
         # find seeds in other slices
         for i in range(self.data.n_slices):
             # skip the initial frame
             if i == idx:
                 continue
+
+            # grab the slice
+            im = self.data.image[i, ...] * init_membrane
+
+            # pouze seedy
+            print 'Propagating seeds ...',
+
+            print 'done'
+
+            # membrana
+            print ''
 
 
 
