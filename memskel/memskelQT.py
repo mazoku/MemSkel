@@ -19,6 +19,8 @@ from segmentator import Segmentator
 import skimage.morphology as skimor
 import pymorph as pm
 import cPickle as pickle
+# import shelve
+import gzip
 
 from constants import *
 
@@ -49,6 +51,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.disp_seeds = self.disp_seeds_BTN.isChecked()
         self.disp_skelet = self.disp_skelet_BTN.isChecked()
         self.disp_approx = self.disp_approximation_BTN.isChecked()
+        self.state_fname = 'data/program_state.pklz'
         # self.x
 
         # OVERRIDING ----
@@ -62,7 +65,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.mark_obj_BTN.clicked.connect(lambda: self.mark_seeds('o'))
         self.mark_bgd_BTN.clicked.connect(lambda: self.mark_seeds('b'))
         self.segment_img_BTN.clicked.connect(self.segment_img)
-        self.process_stack_BTN.clicked.connect(self.process_stack)
+        self.segment_stack_BTN.clicked.connect(self.segment_stack)
 
         self.disp_membrane_BTN.clicked.connect(self.disp_membrane_clicked)
         self.disp_seeds_BTN.clicked.connect(self.disp_seeds_clicked)
@@ -84,6 +87,9 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.approximation_BTN.clicked.connect(self.approximation_clicked)
 
         self.smoothing_fac_SB.valueChanged.connect(self.smoothing_fac_changed)
+
+        self.save_state_BTN.clicked.connect(self.save_state)
+        self.load_state_BTN.clicked.connect(self.load_state)
 
         # display default image
         logo_fname = 'data/icons/kky.png'
@@ -322,23 +328,14 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.disp_membrane = True
         self.segmentator.segment(self.actual_idx, update_fcn=self.update_segmentation, progress_fig=False)
         self.statusbar.showMessage('Segmentation done')
-        self.process_stack_BTN.setEnabled(True)
+        self.segment_stack_BTN.setEnabled(True)
         self.data.processed[self.actual_idx] = True
         self.disp_membrane_BTN.setChecked(True)
 
-    def process_stack(self):
+    def segment_stack(self):
         # segmentation
         self.statusbar.showMessage('Segmenting stack ...')
-        # temp --
-        print 'Writing data to file ...',
-        out = {'im': self.data.image,
-               'seeds': self.data.seeds,
-               'segmentation': self.data.segmentation,
-               'roi': self.data.roi,
-               'idx': self.actual_idx}
-        pickle.dump(out, open('data/test_data_3d.pickle', 'wb'))
-        print 'done'
-        # --
+
         self.statusbar.showMessage('Segmentation done')
 
         # skeletonization
@@ -477,7 +474,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         self.actual_slice_LBL.setText(str(value + 1))
         self.actual_idx = value
 
-        self.process_stack_BTN.setEnabled(self.data.processed[self.actual_idx])
+        self.segment_stack_BTN.setEnabled(self.data.processed[self.actual_idx])
 
         self.create_img_vis()
         self.canvas_GV.setImage(self.qimage)
@@ -550,6 +547,43 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         tiff = TIFFimage(saveim.astype(np.uint8), description='')
         tiff.write_file(filename_mem, compression='none')
         del tiff
+
+    def save_state(self):
+        print "Saving program sate into the file '{}'...".format(self.state_fname),
+        # out = {'im': self.data.image,
+        #        'seeds': self.data.seeds,
+        #        'segmentation': self.data.segmentation,
+        #        'roi': self.data.roi,
+        #        'idx': self.actual_idx}
+        state = self.create_program_state()
+        with gzip.open(self.state_fname, 'wb') as f:
+            pickle.dump(state, f)
+        print 'done'
+
+    def load_state(self):
+        with gzip.open(self.state_fname, 'rb') as f:
+            state = pickle.load(f)
+        pass
+        self.set_state(state)
+
+    def set_state(self, state):
+        self.threshold_SB.setValue(state['threshold'])
+        pass
+
+    def create_program_state(self):
+        state = {'data': self.data,
+                 'idx': self.actual_idx,
+                 'sidp_'
+                 'disp_seeds': self.disp_seeds_BTN.isChecked(),
+                 'disp_membrane': self.disp_membrane_BTN.isChecked(),
+                 'disp_skelet': self.disp_skelet_BTN.isChecked(),
+                 'disp_approx': self.disp_approximation_BTN.isChecked(),
+                 'threshold': self.threshold_SB.value(),
+                 'circle_radius': self.circ_roi_radius_SB.value(),
+                 'smoothing_factor': self.smoothing_fac_SB.value(),
+                 'eraser_radius': self.eraser_roi_radius_SB.value()
+                 }
+        return state
 
     def create_img_vis(self, img=None, update=True, circ=None):
         if img is None:

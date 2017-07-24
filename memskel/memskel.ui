@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>698</height>
+    <width>909</width>
+    <height>789</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -583,7 +583,7 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="QPushButton" name="process_stack_BTN">
+           <widget class="QPushButton" name="segment_stack_BTN">
             <property name="minimumSize">
              <size>
               <width>0</width>
@@ -711,6 +711,13 @@
         </widget>
        </item>
        <item>
+        <widget class="Line" name="line_9">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -722,6 +729,32 @@
           </size>
          </property>
         </spacer>
+       </item>
+       <item>
+        <widget class="QFrame" name="frame_4">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Raised</enum>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_6">
+          <item>
+           <widget class="QPushButton" name="save_state_BTN">
+            <property name="text">
+             <string>Save state</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="load_state_BTN">
+            <property name="text">
+             <string>Load state</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </item>
       </layout>
      </widget>

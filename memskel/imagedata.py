@@ -5,7 +5,7 @@ from libtiff import TIFFimage
 from PIL import Image
 
 
-class ImageData:
+class ImageData(object):
 
     def __init__(self):
         self.image = None  # image data to be segmented (usually TIFF format)
@@ -131,5 +131,3 @@ if __name__ == '__main__':
     DataViewer(data.image, scale=4).show()
     # for d in data.data:
     #     plt.subplot(1, )
-
-    pass
