@@ -335,6 +335,9 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     def segment_stack(self):
         # segmentation
         self.statusbar.showMessage('Segmenting stack ...')
+        print 'Segmenting stack ...',
+        self.segmentator.segment_stack(self.actual_idx)
+        print 'done'
 
         self.statusbar.showMessage('Segmentation done')
 
@@ -558,22 +561,42 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         state = self.create_program_state()
         with gzip.open(self.state_fname, 'wb') as f:
             pickle.dump(state, f)
+        print 'data.seg:{}, segmentator.seg:{}'.format(self.data.segmentation.max(),
+                                                       self.segmentator.data.segmentation.max())
         print 'done'
 
     def load_state(self):
         with gzip.open(self.state_fname, 'rb') as f:
             state = pickle.load(f)
-        pass
         self.set_state(state)
+        print 'data.seg:{}, segmentator.seg:{}'.format(self.data.segmentation.max(),
+                                                       self.segmentator.data.segmentation.max())
 
     def set_state(self, state):
+        self.data = state['data']
+        self.segmentator.data = self.data
+        self.actual_idx = state['actual_idx']
+
+        self.disp_seeds = state['disp_seeds']
+        self.disp_seeds_BTN.setChecked(self.disp_seeds)
+        self.disp_membrane = state['disp_membrane']
+        self.disp_membrane_BTN.setChecked(self.disp_membrane)
+        self.disp_skelet = state['disp_skelet']
+        self.disp_skelet_BTN.setChecked(self.disp_skelet)
+        self.disp_approx = state['disp_approx']
+        self.disp_approximation_BTN.setChecked(self.disp_approx)
+
         self.threshold_SB.setValue(state['threshold'])
-        pass
+        self.circ_roi_radius_SB.setValue(state['circle_radius'])
+        self.smoothing_fac_SB.setValue(state['smoothing_factor'])
+        self.eraser_roi_radius_SB.setValue(state['eraser_radius'])
+        self.create_img_vis(update=True)
+
+        self.segment_stack_BTN.setEnabled(self.data.processed[self.actual_idx])
 
     def create_program_state(self):
         state = {'data': self.data,
-                 'idx': self.actual_idx,
-                 'sidp_'
+                 'actual_idx': self.actual_idx,
                  'disp_seeds': self.disp_seeds_BTN.isChecked(),
                  'disp_membrane': self.disp_membrane_BTN.isChecked(),
                  'disp_skelet': self.disp_skelet_BTN.isChecked(),

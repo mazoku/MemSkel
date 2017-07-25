@@ -8,6 +8,7 @@ __author__ = 'Ryba'
 import numpy as np
 import skimage.morphology as skimor
 import skimage.exposure as skiexp
+import matplotlib.pyplot as plt
 from constants import *
 import cv2
 import cPickle as pickle
@@ -25,6 +26,7 @@ class Segmentator(object):
         self.max_iterations = 1000  # maximal number of iterations
         self.strel = np.ones((3, 3), dtype=np.int)  # structure element of dilatation for getting neighboring points
         self.model_hist = None  # histogram model for back projection
+        self.bp_seeds_T = 100  # threshold for propagating seeds; backprojection must be grater than this for the pixel to be a seed
 
     @property
     def ball_radius(self):
@@ -163,18 +165,23 @@ class Segmentator(object):
         cv2.normalize(self.model_hist, self.model_hist, 0, 255, cv2.NORM_MINMAX)
 
         if show:
-            h = np.zeros((300, 256, 3))
-            hist = np.int32(np.around(self.model_hist))
-            for x, y in enumerate(hist):
-                cv2.line(h, (x, 0), (x, y), (255, 255, 255))
-            y = np.flipud(h)
-            cv2.imshow('hist model', y)
-            if show_now:
-                cv2.waitKey(0)
+            plt.figure()
+            x = range(0, 256, 4)
+            plt.plot(x, self.model_hist.flatten(), 'b-')
+            plt.show()
+            # h = np.zeros((300, 256, 3))
+            # hist = np.int32(np.around(self.model_hist))
+            # for x, y in enumerate(hist):
+            #     cv2.line(h, (x, 0), (x, y), (255, 255, 255))
+            # y = np.flipud(h)
+            # cv2.imshow('hist model', y)
+            # if show_now:
+            #     cv2.waitKey(0)
 
     def segment_stack(self, idx):
         init_membrane = self.data.segmentation[idx, ...]
         init_seeds = self.data.seeds[idx, ...]
+        init_skel = self.data.skelet[idx, ...]
 
         # create histogram model for backprojection
         # self.calc_model(self.data.image[idx, ...],  init_membrane)
@@ -192,15 +199,19 @@ class Segmentator(object):
             # pouze seedy
             print 'Propagating seeds ...',
             bp = cv2.calcBackProject([im], [0,], self.model_hist, [0, 256], 1)
+            bp_t = bp > self.bp_seeds_T
+            bp_skel = bp_t * init_skel
 
-            cv2.imshow('backproj', np.hstack((im, bp)))
-            cv2.waitKey(0)
+            # plt.figure()
+            # plt.subplot(131), plt.imshow(bp, 'gray')
+            # plt.subplot(132), plt.imshow(bp_t, 'gray')
+            # plt.subplot(133), plt.imshow(bp_skel, 'gray')
+            # plt.show()
+
             print 'done'
 
             # membrana
             print ''
-
-
 
         # segment each slice
 
