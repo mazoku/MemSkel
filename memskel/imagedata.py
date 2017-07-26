@@ -23,6 +23,8 @@ class ImageData(object):
         self.n_slices = None
         self.processed = False
 
+        self.thresholds = None  # thresholds for individual slides
+
     # @property
     # def thresh_roi(self):
     #     return self.__thresh_roi
@@ -70,6 +72,7 @@ class ImageData(object):
         self.approx_skel = [None, ] * self.n_slices
         self.spline = [None, ] * self.n_slices
         self.processed = [False, ] * self.n_slices
+        self.thresholds = [0, ] * self.n_slices
 
     def pilImg2npArray(self, im):
         page = 0

@@ -266,9 +266,16 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
             self.create_img_vis(update=True)
 
     def threshold_changed(self, x):
-        self.data.thresh_roi[self.actual_idx, ...] = self.data.image[self.actual_idx, ...] > x
+        # self.data.thresh_roi[self.actual_idx, ...] = self.data.image[self.actual_idx, ...] > x
+        # self.data.thresh_roi = self.data.image > x
+        for i in range(self.data.n_slices):
+            # if not self.data.thresh_roi[i, ...].any() or i == self.actual_idx:
+            if self.data.thresholds[i] is None or i == self.actual_idx:
+                self.data.thresh_roi[i, ...] = self.data.image[i, ...] >= x
+                self.data.thresholds[i] = x
         self.data.update_roi()
         self.create_img_vis(update=True)
+        print self.data.thresholds
 
     def disp_roi_clicked(self):
         self.create_img_vis(update=True)
@@ -476,6 +483,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     def slice_SB_changed(self, value):
         self.actual_slice_LBL.setText(str(value + 1))
         self.actual_idx = value
+        self.threshold_SB.setValue(self.data.thresholds[self.actual_idx])
 
         self.segment_stack_BTN.setEnabled(self.data.processed[self.actual_idx])
 

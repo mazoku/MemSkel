@@ -197,7 +197,7 @@ class Segmentator(object):
             im = self.data.image[i, ...] * init_membrane
 
             # pouze seedy
-            print 'Propagating seeds ...',
+            print 'Defining seeds ...',
             bp = cv2.calcBackProject([im], [0,], self.model_hist, [0, 256], 1)
             bp_t = bp > self.bp_seeds_T
             bp_skel = bp_t * init_skel
