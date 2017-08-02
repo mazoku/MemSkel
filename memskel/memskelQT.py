@@ -16,8 +16,9 @@ from scipy import interpolate
 from imagedata import ImageData
 from MyImageViewer import ImageViewerQt
 from segmentator import Segmentator
+import utils
 import skimage.morphology as skimor
-import pymorph as pm
+# import pymorph as pm
 import cPickle as pickle
 # import shelve
 import gzip
@@ -109,42 +110,13 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     def smoothing_fac_changed(self, value):
         self.approximation_clicked()
 
-    def sequential_thinning(self, skel, type='both'):
-        # TODO: is it possible to use skimage.thin to do that? This way we could remove one dependency (pymorph)
-        golayL1Hit = np.array([[0, 0, 0], [0, 1, 0], [1, 1, 1]])
-        golayL1Miss = np.array([[1, 1, 1], [0, 0, 0], [0, 0, 0]])
-        golayL = pm.se2hmt(golayL1Hit, golayL1Miss)
-
-        golayE1Hit = np.array([[0, 1, 0], [0, 1, 0], [0, 0, 0]])
-        golayE1Miss = np.array([[0, 0, 0], [1, 0, 1], [1, 1, 1]])
-        golayE = pm.se2hmt(golayE1Hit, golayE1Miss)
-
-        if type in ['golayL', 'both']:
-            skel = pm.thin(skel, Iab=golayL, n=-1, theta=45, direction='clockwise')
-        if type in ['golayE', 'both']:
-            skel = pm.thin(skel, Iab=golayE, n=-1, theta=45, direction='clockwise')
-        else:
-            raise AttributeError('Wrong type specified, valid types are: golayL, golayE, both')
-
-        # changed = True
-        # while changed:
-        #    skelT = pm.thin(skel, Iab = golayE, n = 1, theta = 45, direction = "clockwise")
-        #    plt.figure()
-        #    plt.subplot(121), plt.imshow( skel ), plt.gray()
-        #    plt.subplot(122), plt.imshow( skelT ), plt.gray()
-        #    plt.show()
-        #
-        #    if (skel == skelT).all() :
-        #        changed = False
-        #    skel = skelT
-
-        return skel
-
     def skeletonize_clicked(self):
+        # TODO: vytvorit v utils metodu a tady obstarat jen GUI, aka aproximace
         data = self.data.segmentation[self.actual_idx, ...]
         skel = skimor.medial_axis(data)
         # processing skelet - removing not-closed parts
-        self.data.skelet[self.actual_idx, :, :] = self.sequential_thinning(skel, type='golayE')
+        # self.data.skelet[self.actual_idx, :, :] = self.sequential_thinning(skel, type='golayE')
+        self.data.skelet[self.actual_idx, :, :] = utils.sequential_thinning(skel, type='golayE')
         self.disp_skelet_BTN.setChecked(True)
         self.disp_skelet_clicked()
         self.create_img_vis(update=True)
@@ -152,70 +124,15 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
     def spline_approximation(self):
         pass
 
-    def skel2path(self, skel, startPt=[]):
-        nPoints = len(np.nonzero(skel)[0])
-        path = np.zeros((nPoints, 2))
-
-        if not startPt:
-            startPt = np.argwhere(skel)[0, :]
-        skel[startPt[0], startPt[1]] = 0
-        path[0, :] = startPt
-
-        nghbsI = np.array(([-1, 0], [0, -1], [0, 1], [1, 0], [-1, -1], [-1, 1], [1, -1], [1, 1]))
-
-        currPt = startPt
-        for i in range(1, nPoints - 1):
-            mask = np.array([nghbsI[:, 0] + currPt[0], nghbsI[:, 1] + currPt[1]]).conj().transpose()
-            nghbs = skel[mask[:, 0], mask[:, 1]]
-            firstI = np.argwhere(nghbs)[0]  # get index of first founded neighbor
-            currPt = np.squeeze(mask[firstI, :])  # get that neighbor
-            path[i, :] = currPt
-            skel[currPt[0], currPt[1]] = 0
-
-        path[-1, :] = np.argwhere(skel)  # should be the last remaining pixel
-
-        return path
-
     def approximation_clicked(self):
-        pathsL = []
-        # spline = []
-        # approx = []
-        # skel = self.data.skelet[self.actual_idx, ...]
-        # for i in range(self.numframes):
-        #     approx.append(np.zeros((1, 2), dtype=np.int))
-        #     spline.append(np.zeros((1, 2), dtype=np.int))
+        (tck, u), approx = utils.approximate(self.data.skelet[self.actual_idx, :, :], self.smoothing_fac_SB.value())
 
-        nProcessedFrames = np.amax(np.amax(self.data.skelet, axis=1), axis=1).sum()
-        m = self.data.skelet.sum() / nProcessedFrames  # average number of points in skelet
-        maxsf = m + np.sqrt(2 * m)  # maximal recommended smoothing factor according to scipy documentation
-        sfLevel = int(self.smoothing_fac_SB.value())
-        nLevels = 10  # number of smoothing levels
-        sf = int(sfLevel * ((2 * maxsf) / nLevels))
+        self.data.spline[self.actual_idx] = (tck, u)
+        self.data.approx_skel[self.actual_idx] = approx
 
-        for i in range(self.data.n_slices):
-            if not self.data.skelet[i, :, :].any():
-                self.data.spline[i] = None
-                self.data.approx_skel[i] = None
-                continue
-            path = self.skel2path(self.data.skelet[i, :, :].copy())
-            pathsL.append(path)
-            x = []
-            y = []
-            for point in path:
-                x.append(point[1])
-                y.append(point[0])
-
-            # tck, u, fp, ier, msg = interpolate.splprep((x, y), s=sf, full_output=1, per=1)
-            (tck, u), fp, ier, msg = interpolate.splprep((x, y), s=sf, full_output=1, per=1)
-            # x = interpolate.splprep((x, y), s=sf, full_output=1, per=1)
-            # u = tcku[1]
-
-            self.data.spline[i] = (tck, u)
-            self.data.approx_skel[i] = np.array(interpolate.splev(x=u, tck=tck))
-
-            self.disp_approximation_BTN.setChecked(True)
-            self.disp_approximation_clicked()
-            self.create_img_vis(update=True)
+        self.disp_approximation_BTN.setChecked(True)
+        self.disp_approximation_clicked()
+        self.create_img_vis(update=True)
 
     def eraser_clicked(self):
         if self.eraser_BTN.isChecked():
@@ -275,7 +192,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
                 self.data.thresholds[i] = x
         self.data.update_roi()
         self.create_img_vis(update=True)
-        print self.data.thresholds
+        # print self.data.thresholds
 
     def disp_roi_clicked(self):
         self.create_img_vis(update=True)
@@ -343,7 +260,8 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         # segmentation
         self.statusbar.showMessage('Segmenting stack ...')
         print 'Segmenting stack ...',
-        self.segmentator.segment_stack(self.actual_idx)
+        # self.segmentator.segment_stack(self.actual_idx)
+        self.segmentator.segment_stack_linear(self.actual_idx, self.smoothing_fac_SB.value())
         print 'done'
 
         self.statusbar.showMessage('Segmentation done')
@@ -577,8 +495,6 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         with gzip.open(self.state_fname, 'rb') as f:
             state = pickle.load(f)
         self.set_state(state)
-        print 'data.seg:{}, segmentator.seg:{}'.format(self.data.segmentation.max(),
-                                                       self.segmentator.data.segmentation.max())
 
     def set_state(self, state):
         self.data = state['data']

@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from constants import *
 import cv2
 import cPickle as pickle
+import utils
 
 
 class Segmentator(object):
@@ -103,7 +104,7 @@ class Segmentator(object):
                 changed = False
                 segmentation = skimor.binary_closing(segmentation, selem=np.ones((5, 5), dtype=np.int))
 
-            if it % update_rate == 0:
+            if update_fcn is not None and it % update_rate == 0:
                 update_fcn(segmentation)
 
         if progress_fig:
@@ -179,13 +180,12 @@ class Segmentator(object):
             #     cv2.waitKey(0)
 
     def segment_stack(self, idx):
-        init_membrane = self.data.segmentation[idx, ...]
-        init_seeds = self.data.seeds[idx, ...]
+        # init_membrane = self.data.segmentation[idx, ...]
+        # init_seeds = self.data.seeds[idx, ...]
         init_skel = self.data.skelet[idx, ...]
 
         # create histogram model for backprojection
-        # self.calc_model(self.data.image[idx, ...],  init_membrane)
-        self.calc_model(self.data.image[idx, ...],  init_seeds, show=False)
+        # self.calc_model(self.data.image[idx, ...],  init_seeds, show=False)
 
         # find seeds in other slices
         for i in range(self.data.n_slices):
@@ -194,26 +194,56 @@ class Segmentator(object):
                 continue
 
             # grab the slice
-            im = self.data.image[i, ...] * init_membrane
+            # im = self.data.image[i, ...] * init_membrane
 
             # pouze seedy
-            print 'Defining seeds ...',
-            bp = cv2.calcBackProject([im], [0,], self.model_hist, [0, 256], 1)
-            bp_t = bp > self.bp_seeds_T
-            bp_skel = bp_t * init_skel
+            print 'defining seeds ...',
+            # seeds derived from backprojection
+            # bp = cv2.calcBackProject([im], [0,], self.model_hist, [0, 256], 1)
+            # bp_t = bp > self.bp_seeds_T
+            # bp_skel = bp_t * init_skel
 
-            # plt.figure()
-            # plt.subplot(131), plt.imshow(bp, 'gray')
-            # plt.subplot(132), plt.imshow(bp_t, 'gray')
-            # plt.subplot(133), plt.imshow(bp_skel, 'gray')
-            # plt.show()
+            # seeds derived from init_seeds' intensity
+            # bp = im >= im[np.nonzero(init_seeds)].mean()
 
-            print 'done'
+            # seeds defined as the skel from previous slice
+            new_seeds = init_skel
+
+            self.data.seeds[i, ...] = new_seeds
 
             # membrana
             print ''
 
         # segment each slice
+
+    def segment_stack_linear(self, idx, smoothing_fac):
+        init_skel = self.data.skelet[idx, ...]
+
+        # generate indices of slice_to_be_segmented and slice_for_initialization
+        left = [(i, i + 1) for i in range(idx - 1, -1, -1)]
+        right = [(i + 1, i) for i in range(idx, self.data.n_slices - 1)]
+        idxs_pairs = left + right
+        for i, init_i in idxs_pairs:
+            # define seeds as the previous skelet
+            seeds = self.data.skelet[init_i, ...]
+            self.data.seeds[i, ...] = seeds
+
+            # segment
+            self.data.segmentation[i, ...] = self.segment(i)
+
+            # skeletonize
+            skel = skimor.medial_axis(self.data.segmentation[i, ...])
+            # processing skelet - removing not-closed parts
+            self.data.skelet[i, :, :] = utils.sequential_thinning(skel, type='golayE')
+
+            # approximate
+            (tck, u), approx = utils.approximate(self.data.skelet[i, :, :], smoothing_fac)
+
+            self.data.spline[i] = (tck, u)
+            self.data.approx_skel[i] = approx
+
+            # finalize
+            self.data.processed[i] = True
 
     def mask_newbie(self, newbie, mask):
         """
