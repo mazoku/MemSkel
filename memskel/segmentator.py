@@ -22,7 +22,7 @@ class Segmentator(object):
         self.ball_radius = 3  # radius defining the size of neighborhood used for calculations
         self.define_ball_mask()
         self.min_diff = 10  # if the difference between distances to inner and outer masks are smaller than this, accept the newbie
-        self.localization_w = .2  # weight of localization, <0, 1>; the higher the value the more localized the calculation
+        self.localization_w = 0.8 # weight of localization, <0, 1>; the higher the value the more localized the calculation
         self.draw_steps = 5  # number of iterations after which the figures are updated
         self.max_iterations = 1000  # maximal number of iterations
         self.strel = np.ones((3, 3), dtype=np.int)  # structure element of dilatation for getting neighboring points
@@ -217,7 +217,7 @@ class Segmentator(object):
         # segment each slice
 
     def segment_stack_linear(self, idx, smoothing_fac):
-        init_skel = self.data.skelet[idx, ...]
+        # init_skel = self.data.skelet[idx, ...]
 
         # generate indices of slice_to_be_segmented and slice_for_initialization
         left = [(i, i + 1) for i in range(idx - 1, -1, -1)]
@@ -225,11 +225,16 @@ class Segmentator(object):
         idxs_pairs = left + right
         for i, init_i in idxs_pairs:
             # define seeds as the previous skelet
-            seeds = self.data.skelet[init_i, ...]
-            self.data.seeds[i, ...] = seeds
+            self.data.seeds[i, ...] = self.data.skelet[init_i, ...]
 
             # segment
             self.data.segmentation[i, ...] = self.segment(i)
+
+            plt.figure()
+            plt.subplot(131), plt.imshow(self.data.roi[i, ...], 'gray', vmin=0, vmax=1)
+            plt.subplot(132), plt.imshow(self.data.seeds[i, ...], 'gray', vmin=0, vmax=1)
+            plt.subplot(133), plt.imshow(self.data.segmentation[i, ...], 'gray', vmin=0, vmax=1)
+            plt.show()
 
             # skeletonize
             skel = skimor.medial_axis(self.data.segmentation[i, ...])

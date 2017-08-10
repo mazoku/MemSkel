@@ -24,6 +24,7 @@ class ImageData(object):
         self.processed = False
 
         self.thresholds = None  # thresholds for individual slides
+        self.roi_specified = False  # flag indicating whether the ROI was defined
 
     # @property
     # def thresh_roi(self):

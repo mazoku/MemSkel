@@ -187,7 +187,7 @@ class MainWindow(QtGui.QMainWindow, Ui_MainWindow):
         # self.data.thresh_roi = self.data.image > x
         for i in range(self.data.n_slices):
             # if not self.data.thresh_roi[i, ...].any() or i == self.actual_idx:
-            if self.data.thresholds[i] is None or i == self.actual_idx:
+            if not self.data.thresholds[i] or i == self.actual_idx:
                 self.data.thresh_roi[i, ...] = self.data.image[i, ...] >= x
                 self.data.thresholds[i] = x
         self.data.update_roi()
@@ -602,6 +602,7 @@ if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
     memskel = MainWindow()
     fname = 'data/smallStack.tif'
+    # fname = '/home/tomas/Dropbox/Data/MemSkel/bug1_no_spline_cell.tif'
     memskel.load_data(fname=fname)
     memskel.show()
     app.exec_()
